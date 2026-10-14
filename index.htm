@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Forest Fair — Лесная Ярмарка</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-top: #111916;
+            --bg-mid: #1e1a17;
+            --bg-bot: #12211a;
+            --card-border: #6e5536;
+            --card-border-hover: #f5b942;
+            --accent-gold: #f5b942;
+            --accent-amber: #d97724;
+            --accent-green: #3ca365;
+            --text-main: #fcf8f2;
+            --text-muted: #d0c4b4;
+            --danger: #ff6b5e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(160deg, var(--bg-top) 0%, var(--bg-mid) 48%, var(--bg-bot) 100%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            padding-bottom: 130px;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* МЯГКОЕ СВЕЧЕНИЕ СВЕРХУ НА ВЕСЬ ЭКРАН БЕЗ РЕЗКИХ ГРАНИЦ */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 340px;
+            background: radial-gradient(ellipse 75% 65% at 50% 0%, rgba(217, 119, 36, 0.16) 0%, rgba(30, 58, 43, 0.25) 45%, transparent 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* ЦЕНТРОВКА КОНТЕНТА */
+        .app-container {
+            max-width: 720px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ДЕКОРАТИВНЫЙ ЛЕСНОЙ ФОН */
+        .forest-bg-decor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bg-branch-left {
+            position: absolute;
+            top: -10px;
+            left: -20px;
+            width: 180px;
+            opacity: 0.22;
+        }
+
+        .bg-branch-right {
+            position: absolute;
+            top: 40px;
+            right: -25px;
+            width: 170px;
+            opacity: 0.22;
+            transform: scaleX(-1);
+        }
+
+        .bg-deer {
+            position: absolute;
+            bottom: 140px;
+            left: -10px;
+            width: 160px;
+            opacity: 0.12;
+        }
+
+        .bg-fox {
+            position: absolute;
+            bottom: 80px;
+            right: 5px;
+            width: 120px;
+            opacity: 0.14;
+        }
+
+        .firefly {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle, #ffe57f 0%, rgba(245,185,66,0) 70%);
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: floatFirefly 8s infinite ease-in-out alternate;
+        }
+
+        @keyframes floatFirefly {
+            0% { transform: translateY(0px) translateX(0px) scale(0.8); opacity: 0.2; }
+            50% { opacity: 0.85; }
+            100% { transform: translateY(-60px) translateX(25px) scale(1.3); opacity: 0.3; }
+        }
+
+        /* БЕСШОВНАЯ ПАРЯЩАЯ ШАПКА */
+        .header {
+            background: transparent;
+            padding: 28px 16px 14px;
+            text-align: center;
+            position: relative;
+        }
+
+        /* Тонкий золотой луч-разделитель, плавно исчезающий по краям */
+        .header::after {
+            content: "";
+            display: block;
+            width: 75%;
+            max-width: 420px;
+            height: 1px;
+            margin: 16px auto 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(245, 185, 66, 0.45) 50%, transparent 100%);
+        }
+
+        .brand-badge {
+            display: inline-block;
+            background: rgba(245, 185, 66, 0.14);
+            color: var(--accent-gold);
+            border: 1px solid rgba(245, 185, 66, 0.45);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            padding: 5px 14px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+            backdrop-filter: blur(6px);
+        }
+
+        .title-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 4px 0 8px;
+        }
+
+        .animated-title {
+            font-size: 38px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            font-family: Georgia, "Times New Roman", serif;
+            background: linear-gradient(90deg, #fff3d1 0%, #f5b942 35%, #ffdf85 50%, #e08e24 75%, #fff3d1 100%);
+            background-size: 200% auto;
+            color: #fff;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 4px 14px rgba(245, 185, 66, 0.38));
+            animation: shineTitle 4.5s linear infinite, floatTitle 3.5s ease-in-out infinite;
+        }
+
+        .title-leaf {
+            font-size: 24px;
+            animation: swayLeaf 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes shineTitle {
+            to { background-position: 200% center; }
+        }
+
+        @keyframes floatTitle {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-3px); }
+        }
+
+        @keyframes swayLeaf {
+            0% { transform: rotate(-10deg) scale(0.95); }
+            100% { transform: rotate(12deg) scale(1.08); }
+        }
+
+        .header p {
+            font-size: 13.5px;
+            color: var(--text-muted);
+            max-width: 340px;
+            margin: 0 auto;
+        }
+
+        /* ПАРЯЩАЯ КАПСУЛА КАТЕГОРИЙ (БЕЗ РЕЗКИХ КРАЕВ) */
+        .tabs-wrapper {
+            position: sticky;
+            top: 8px;
+            z-index: 25;
+            display: flex;
+            justify-content: center;
+            padding: 4px 14px;
+        }
+
+        .tabs {
+            display: inline-flex;
+            gap: 8px;
+            padding: 6px 8px;
+            overflow-x: auto;
+            max-width: 100%;
+            background: rgba(20, 26, 22, 0.82);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(245, 185, 66, 0.28);
+            border-radius: 30px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+        }
+
+        .tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+            padding: 7px 15px;
+            border-radius: 22px;
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #f5b942 0%, #d97724 100%);
+            color: #14110e;
+            border-color: #ffe08a;
+            box-shadow: 0 3px 12px rgba(245, 185, 66, 0.4);
+        }
+
+        /* ПРОМОКОД БЛОК */
+        .promo-section {
+            margin: 12px 14px 8px;
+            background: linear-gradient(135deg, rgba(59, 43, 28, 0.78) 0%, rgba(25, 43, 33, 0.78) 100%);
+            backdrop-filter: blur(8px);
+            border: 1.5px dashed rgba(245, 185, 66, 0.75);
+            border-radius: 16px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+        }
+
+        .promo-text {
+            font-size: 12.5px;
+            color: var(--text-main);
+            line-height: 1.35;
+        }
+
+        .promo-text b {
+            color: var(--accent-gold);
+        }
+
+        .promo-btn {
+            background: rgba(245, 185, 66, 0.18);
+            color: var(--accent-gold);
+            border: 1px solid var(--accent-gold);
+            padding: 8px 13px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .promo-btn.applied {
+            background: var(--accent-green);
+            color: #fff;
+            border-color: #6ee79e;
+            box-shadow: 0 0 12px rgba(60, 163, 101, 0.5);
+        }
+
+        /* СЕТКА КАРТОЧЕК */
+        .catalog {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            padding: 14px;
+        }
+
+        @media (max-width: 440px) {
+            .catalog {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* КАРТОЧКА С ВЫДВИЖНОЙ ПЛАШКОЙ И ПОЛНОЙ КАРТИНКОЙ 1:1 */
+        .card {
+            position: relative;
+            aspect-ratio: 1 / 1;
+            border: 2px solid var(--card-border);
+            border-radius: 20px;
+            overflow: hidden;
+            background: #16221b;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.75);
+            transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+                        box-shadow 0.3s ease,
+                        border-color 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--card-border-hover);
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.85),
+                        0 0 20px rgba(245, 185, 66, 0.3);
+        }
+
+        /* САМА КАРТИНКА НА ВСЮ КАРТОЧКУ */
+        .card-bg-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: contrast(1.04) saturate(1.08);
+            transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 1;
+        }
+
+        .card:hover .card-bg-img {
+            transform: scale(1.07);
+        }
+
+        /* Мягкое затемнение только у самого низа */
+        .card-gradient-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to top,
+                rgba(14, 18, 15, 0.95) 0%,
+                rgba(18, 24, 20, 0.65) 26%,
+                rgba(0, 0, 0, 0) 58%
+            );
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .card-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(20, 16, 13, 0.85);
+            backdrop-filter: blur(6px);
+            color: var(--accent-gold);
+            border: 1px solid rgba(245, 185, 66, 0.6);
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 12px;
+            z-index: 4;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.6);
+        }
+
+        /* ВЫДВИЖНАЯ НИЖНЯЯ ШТОРКА */
+        .card-drawer {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 3;
+            padding: 14px 12px 12px;
+            background: linear-gradient(to top, rgba(16, 22, 18, 0.96) 0%, rgba(24, 32, 26, 0.88) 75%, transparent 100%);
+            transition: background 0.3s ease, backdrop-filter 0.3s ease;
+        }
+
+        .card:hover .card-drawer,
+        .card.editing .card-drawer,
+        .card.expanded .card-drawer {
+            background: rgba(17, 23, 19, 0.93);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(245, 185, 66, 0.35);
+        }
+
+        /* ВЕРХНИЙ РЯД ШТОРКИ */
+        .drawer-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .title-block {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .card-title {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 17px;
+            font-weight: 900;
+            line-height: 1.2;
+            letter-spacing: 0.3px;
+            background: linear-gradient(90deg, #fff7e0 0%, #f7cb68 55%, #ffdf91 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.95));
+            margin-bottom: 3px;
+        }
+
+        .card-mini-price {
+            font-size: 12.5px;
+            font-weight: 800;
+            color: #e6d7c3;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+        }
+
+        .card-mini-price span {
+            color: var(--accent-gold);
+        }
+
+        /* СКРЫТАЯ ЧАСТЬ ШТОРКИ */
+        .drawer-details {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+                        opacity 0.28s ease,
+                        margin-top 0.28s ease;
+        }
+
+        .card:hover .drawer-details,
+        .card.editing .drawer-details,
+        .card.expanded .drawer-details {
+            max-height: 240px;
+            opacity: 1;
+            margin-top: 9px;
+        }
+
+        .card-weight-info {
+            font-size: 11px;
+            color: var(--accent-gold);
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .card-desc {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            line-height: 1.35;
+        }
+
+        .add-btn {
+            background: linear-gradient(135deg, #3ca365 0%, #247042 100%);
+            color: #fff;
+            border: 1px solid #63d48f;
+            padding: 8px 11px;
+            border-radius: 11px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            flex-shrink: 0;
+        }
+
+        .add-btn:hover {
+            transform: scale(1.04);
+            box-shadow: 0 4px 14px rgba(60, 163, 101, 0.55);
+        }
+
+        .add-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* ПЛАШКА ВВОДА ГРАММОВКИ */
+        .gram-picker {
+            background: rgba(14, 20, 16, 0.96);
+            border: 1.5px solid var(--accent-gold);
+            border-radius: 12px;
+            padding: 8px;
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .gram-picker-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent-gold);
+            text-align: center;
+        }
+
+        .preset-row {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        .preset-chip {
+            background: #26221e;
+            color: var(--text-muted);
+            border: 1px solid #524230;
+            border-radius: 7px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .preset-chip:hover, .preset-chip:active {
+            border-color: var(--accent-gold);
+            color: #fff;
+        }
+
+        .gram-input-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .gram-input {
+            width: 100%;
+            background: #1a1714;
+            color: #fff;
+            border: 1px solid #6e5536;
+            border-radius: 8px;
+            padding: 6px 8px;
+            font-size: 13px;
+            font-weight: 800;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .gram-input:focus {
+            border-color: var(--accent-gold);
+        }
+
+        .gram-input.input-error {
+            border-color: var(--danger);
+            box-shadow: 0 0 8px rgba(255, 107, 94, 0.55);
+        }
+
+        .gram-unit {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .gram-calc-preview {
+            font-size: 11.5px;
+            color: #8ce8b1;
+            text-align: center;
+            font-weight: 800;
+        }
+
+        .gram-calc-preview.error-text {
+            color: var(--danger);
+        }
+
+        .gram-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .gram-done-btn {
+            flex: 1;
+            background: linear-gradient(135deg, #f5b942 0%, #d97724 100%);
+            color: #14110e;
+            border: none;
+            padding: 6px 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .gram-remove-btn {
+            background: rgba(224, 83, 71, 0.2);
+            color: #ff8b80;
+            border: 1px solid var(--danger);
+            padding: 6px 9px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .selected-badge-btn {
+            background: rgba(60, 163, 101, 0.25);
+            color: #98f5be;
+            border: 1.5px solid #48bf76;
+            padding: 7px 10px;
+            border-radius: 10px;
+            font-size: 11.5px;
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* ПЛАШКА 18+ */
+        .age-disclaimer {
+            margin: 12px 14px 20px;
+            background: rgba(22, 18, 16, 0.9);
+            border: 1.5px solid rgba(224, 83, 71, 0.55);
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+
+        .age-badge {
+            min-width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #e05347 0%, #9e2a20 100%);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ff9e96;
+            box-shadow: 0 0 12px rgba(224, 83, 71, 0.5);
+        }
+
+        .age-text {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .age-text b {
+            color: #ffb3ad;
+        }
+
+        /* НИЖНЯЯ ПАНЕЛЬ КОРЗИНЫ */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(22, 20, 17, 0.96);
+            backdrop-filter: blur(12px);
+            border-top: 2px solid var(--card-border);
+            padding: 12px 16px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 30;
+            box-shadow: 0 -6px 25px rgba(0,0,0,0.75);
+        }
+
+        .cart-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cart-total-label {
+            font-size: 11.5px;
+            color: var(--text-muted);
+        }
+
+        .cart-total-price {
+            font-size: 19px;
+            font-weight: 900;
+            color: var(--accent-gold);
+        }
+
+        .checkout-btn {
+            background: linear-gradient(135deg, #f5b942 0%, #d97724 100%);
+            color: #14110e;
+            border: 1px solid #ffe399;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(245, 185, 66, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="forest-bg-decor">
+        <svg class="bg-branch-left" viewBox="0 0 200 200" fill="none">
+            <path d="M0 10 Q80 40 150 110" stroke="#4f7756" stroke-width="5" stroke-linecap="round"/>
+            <path d="M40 25 L80 10 M55 35 L100 25 M75 50 L120 45 M95 65 L140 65 M30 22 L45 65 M60 40 L75 85 M90 62 L105 105" stroke="#689c70" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="95" cy="70" r="8" fill="#8c5830"/>
+            <circle cx="52" cy="42" r="7" fill="#8c5830"/>
+        </svg>
+        <svg class="bg-branch-right" viewBox="0 0 200 200" fill="none">
+            <path d="M0 10 Q80 40 150 110" stroke="#4f7756" stroke-width="5" stroke-linecap="round"/>
+            <path d="M40 25 L80 10 M55 35 L100 25 M75 50 L120 45 M95 65 L140 65 M30 22 L45 65 M60 40 L75 85 M90 62 L105 105" stroke="#689c70" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <svg class="bg-deer" viewBox="0 0 160 160" fill="#a88b67">
+            <path d="M50 130 L55 95 L95 95 L102 130 L110 130 L103 90 L112 65 L125 60 L120 53 L110 56 L105 38 L120 22 L116 19 L104 32 L98 20 L94 22 L100 38 L95 58 L55 75 L42 68 L38 73 L48 85 L42 130 Z"/>
+        </svg>
+        <svg class="bg-fox" viewBox="0 0 140 140" fill="#d97724">
+            <path d="M35 110 Q20 95 30 75 Q45 70 55 85 L75 70 L82 48 L92 58 L104 46 L108 65 L122 72 L106 82 L95 110 Z"/>
+        </svg>
+        <div class="firefly" style="top: 18%; left: 12%; animation-delay: 0s;"></div>
+        <div class="firefly" style="top: 35%; left: 85%; animation-delay: 1.5s;"></div>
+        <div class="firefly" style="top: 58%; left: 20%; animation-delay: 3s;"></div>
+        <div class="firefly" style="top: 75%; left: 78%; animation-delay: 0.8s;"></div>
+        <div class="firefly" style="top: 88%; left: 45%; animation-delay: 2.2s;"></div>
+    </div>
+
+    <div class="app-container">
+        <div class="header">
+            <div class="brand-badge">🌲 Сибирская таежная лавка • Томск 🦌</div>
+            <div class="title-wrapper">
+                <span class="title-leaf">🌿</span>
+                <h1 class="animated-title">Forest Fair</h1>
+                <span class="title-leaf">🍄</span>
+            </div>
+            <p>Дикоросы, целебные грибы и премиальные чаи с расчетом по граммам</p>
+        </div>
+
+        <div class="tabs-wrapper">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="filterCategory('all', this)">🌿 Все дары</button>
+                <button class="tab-btn" onclick="filterCategory('mushrooms', this)">🍄 Грибы</button>
+                <button class="tab-btn" onclick="filterCategory('tea', this)">🍵 Чаи</button>
+                <button class="tab-btn" onclick="filterCategory('herbs', this)">🌾 Сборы и Опт</button>
+            </div>
+        </div>
+
+        <div class="promo-section">
+            <div class="promo-text">
+                🎁 Промокод <b>FOREST10</b> дает скидку <b>10%</b> на любую граммовку!
+            </div>
+            <button id="promoBtn" class="promo-btn" onclick="togglePromo()">Применить</button>
+        </div>
+
+        <div id="catalogGrid" class="catalog"></div>
+
+        <div class="age-disclaimer">
+            <div class="age-badge">18+</div>
+            <div class="age-text">
+                <b>Строго 18+. Только для совершеннолетних.</b><br>
+                Продукция нашей лавки является натуральным природным сырьем и пищевой добавкой. Не является лекарственным средством или БАД. Перед применением проконсультируйтесь со специалистом.
+            </div>
+        </div>
+    </div>
+
+    <div id="bottomBar" class="bottom-bar">
+        <div class="cart-info">
+            <span id="cartCountLabel" class="cart-total-label">Позиций: 0</span>
+            <span id="cartTotalPrice" class="cart-total-price">0 ₽</span>
+        </div>
+        <button class="checkout-btn" onclick="sendOrder()">📦 Оформить заказ</button>
+    </div>
+
+    <script>
+        var tg = window.Telegram.WebApp;
+        tg.expand();
+
+        var promoApplied = false;
+        var currentCategory = 'all';
+        var cartGrams = {};
+        var openPicker = {};
+
+        var products = [
+            {
+                id: "red_cap",
+                title: "Красный Мухомор",
+                baseGrams: 50,
+                basePrice: 1250,
+                minGrams: 50,
+                presets: [50, 100, 250],
+                category: "mushrooms",
+                badge: "🔥 Хит тайги",
+                desc: "Глубокий сон, снятие тревожности и стресса, мягкий вечерний профилактический курс.",
+                img: "red_cap.jpg"
+            },
+            {
+                id: "panther_extra",
+                title: "Пантерный (Экстра)",
+                baseGrams: 50,
+                basePrice: 4500,
+                minGrams: 50,
+                presets: [50, 100, 200],
+                category: "mushrooms",
+                badge: "👑 Премиум",
+                desc: "Максимальная концентрация активных веществ, отборные цельные шляпки для опытных ценителей.",
+                img: "panther_extra.jpg"
+            },
+            {
+                id: "panther_second",
+                title: "Пантерный (2-й сорт)",
+                baseGrams: 50,
+                basePrice: 3750,
+                minGrams: 50,
+                presets: [50, 100, 200],
+                category: "mushrooms",
+                badge: "💰 Выгодно",
+                desc: "Высокая природная активность. Допускаются легкие изломы шляпок без потери силы.",
+                img: "panther_second.jpg"
+            },
+            {
+                id: "gaba_tea",
+                title: "Чай Габа (Топаз / Рубин)",
+                baseGrams: 50,
+                basePrice: 975,
+                minGrams: 50,
+                presets: [50, 100, 200],
+                category: "tea",
+                badge: "🍵 Релакс",
+                desc: "Высокое содержание ГАМК. Снятие напряжения, спокойствие без сонливости и ясность мыслей.",
+                img: "gaba_tea.jpg"
+            },
+            {
+                id: "puer_tea",
+                title: "Чай Пуэр (Королевский)",
+                baseGrams: 50,
+                basePrice: 600,
+                minGrams: 50,
+                presets: [50, 100, 357],
+                category: "tea",
+                badge: "⚡ Энергия",
+                desc: "Мощная ровная бодрость на весь день, здоровая альтернатива кофе и отличный тонус ЖКТ.",
+                img: "puer_tea.jpg"
+            },
+            {
+                id: "taiga_herbs",
+                title: "Таежный сбор трав",
+                baseGrams: 50,
+                basePrice: 650,
+                minGrams: 50,
+                presets: [50, 100, 250],
+                category: "herbs",
+                badge: "🌿 Алтай и Сибирь",
+                desc: "Экологически чистые дикоросы Сибири и Алтая для мягкого очищения и защиты организма.",
+                img: "taiga_herbs.jpg"
+            },
+            {
+                id: "lion_mane",
+                title: "Мицелий Ежовика (Опт)",
+                baseGrams: 10000,
+                basePrice: 18000,
+                minGrams: 10000,
+                presets: [10000, 20000, 50000],
+                category: "herbs",
+                badge: "🧠 Опт от 10 кг",
+                desc: "Природный ноотроп для памяти, концентрации внимания, нейрогенеза и ясности ума.",
+                img: "lion_mane.jpg"
+            }
+        ];
+
+        function getProductById(id) {
+            for (var i = 0; i < products.length; i++) {
+                if (products[i].id === id) return products[i];
+            }
+            return null;
+        }
+
+        function calcItemPrice(product, grams) {
+            var pricePerGram = product.basePrice / product.baseGrams;
+            return Math.round(pricePerGram * grams);
+        }
+
+        function formatMinWeightText(minGrams) {
+            return minGrams >= 1000 ? (minGrams / 1000) + "кг" : minGrams + "г";
+        }
+
+        function renderCatalog() {
+            var grid = document.getElementById("catalogGrid");
+            grid.innerHTML = "";
+
+            for (var i = 0; i < products.length; i++) {
+                var item = products[i];
+                if (currentCategory !== "all" && item.category !== currentCategory) {
+                    continue;
+                }
+
+                var savedGrams = cartGrams[item.id] || 0;
+                var isEditing = openPicker[item.id] === true;
+                var defaultGrams = savedGrams > 0 ? savedGrams : item.baseGrams;
+                var previewPrice = calcItemPrice(item, defaultGrams);
+
+                var card = document.createElement("div");
+                card.className = "card" + (isEditing ? " editing" : "");
+
+                card.onclick = (function(cardEl) {
+                    return function(e) {
+                        if (e.target.tagName === "BUTTON" || e.target.tagName === "INPUT") return;
+                        cardEl.classList.toggle("expanded");
+                    };
+                })(card);
+
+                var actionBtnHtml = "";
+                if (savedGrams > 0 && !isEditing) {
+                    var itemSum = calcItemPrice(item, savedGrams);
+                    actionBtnHtml = '<button type="button" class="selected-badge-btn" onclick="openGramPicker(\'' + item.id + '\')">✓ ' + savedGrams + ' г • ' + itemSum.toLocaleString("ru-RU") + ' ₽</button>';
+                } else if (!isEditing) {
+                    actionBtnHtml = '<button type="button" class="add-btn" onclick="openGramPicker(\'' + item.id + '\')">⚖️ Выбрать вес</button>';
+                }
+
+                var pickerHtml = "";
+                if (isEditing) {
+                    var presetsHtml = "";
+                    for (var p = 0; p < item.presets.length; p++) {
+                        var pr = item.presets[p];
+                        var prLabel = pr >= 1000 ? (pr / 1000) + "кг" : pr + "г";
+                        presetsHtml += '<button type="button" class="preset-chip" onclick="setGramInput(\'' + item.id + '\', ' + pr + ')">' + prLabel + '</button>';
+                    }
+
+                    pickerHtml =
+                        '<div class="gram-picker">' +
+                            '<div class="gram-picker-label">Введите вес (от ' + formatMinWeightText(item.minGrams) + '):</div>' +
+                            '<div class="preset-row">' + presetsHtml + '</div>' +
+                            '<div class="gram-input-row">' +
+                                '<input type="number" id="input_' + item.id + '" class="gram-input" value="' + defaultGrams + '" min="' + item.minGrams + '" step="5" oninput="liveRecalc(\'' + item.id + '\')">' +
+                                '<span class="gram-unit">г</span>' +
+                            '</div>' +
+                            '<div id="preview_' + item.id + '" class="gram-calc-preview">Сумма: ' + previewPrice.toLocaleString("ru-RU") + ' ₽</div>' +
+                            '<div class="gram-actions">' +
+                                (savedGrams > 0 ? '<button type="button" class="gram-remove-btn" onclick="removeItem(\'' + item.id + '\')">✕</button>' : '') +
+                                '<button type="button" class="gram-done-btn" onclick="confirmGrams(\'' + item.id + '\')">✓ Готово</button>' +
+                            '</div>' +
+                        '</div>';
+                }
+
+                var weightLabel = item.baseGrams >= 1000 ? (item.baseGrams / 1000) + " кг" : item.baseGrams + " г";
+
+                card.innerHTML =
+                    '<div class="card-badge">' + item.badge + '</div>' +
+                    '<img class="card-bg-img" src="' + item.img + '" alt="' + item.title + '" loading="lazy">' +
+                    '<div class="card-gradient-overlay"></div>' +
+                    '<div class="card-drawer">' +
+                        '<div class="drawer-header">' +
+                            '<div class="title-block">' +
+                                '<div class="card-title">' + item.title + '</div>' +
+                                '<div class="card-mini-price"><span>' + item.basePrice.toLocaleString("ru-RU") + ' ₽</span> / ' + weightLabel + '</div>' +
+                            '</div>' +
+                            actionBtnHtml +
+                        '</div>' +
+                        '<div class="drawer-details">' +
+                            '<div class="card-weight-info">Минимальный заказ: от ' + formatMinWeightText(item.minGrams) + '</div>' +
+                            '<div class="card-desc">' + item.desc + '</div>' +
+                            pickerHtml +
+                        '</div>' +
+                    '</div>';
+
+                grid.appendChild(card);
+            }
+            updateBottomBar();
+        }
+
+        function openGramPicker(productId) {
+            openPicker[productId] = true;
+            renderCatalog();
+            var inp = document.getElementById("input_" + productId);
+            if (inp) {
+                inp.focus();
+                inp.select();
+            }
+        }
+
+        function setGramInput(productId, gramsVal) {
+            var inp = document.getElementById("input_" + productId);
+            if (inp) {
+                inp.value = gramsVal;
+                liveRecalc(productId);
+            }
+        }
+
+        function liveRecalc(productId) {
+            var item = getProductById(productId);
+            var inp = document.getElementById("input_" + productId);
+            var prev = document.getElementById("preview_" + productId);
+            if (!item || !inp || !prev) return;
+
+            var g = parseInt(inp.value, 10);
+            if (isNaN(g) || g < item.minGrams) {
+                prev.textContent = "⚠️ Минимальный заказ от " + formatMinWeightText(item.minGrams);
+                prev.classList.add("error-text");
+                inp.classList.add("input-error");
+                return;
+            }
+
+            prev.classList.remove("error-text");
+            inp.classList.remove("input-error");
+            var calculated = calcItemPrice(item, g);
+            prev.textContent = "Сумма за " + g + " г: " + calculated.toLocaleString("ru-RU") + " ₽";
+        }
+
+        function confirmGrams(productId) {
+            var item = getProductById(productId);
+            var inp = document.getElementById("input_" + productId);
+            var prev = document.getElementById("preview_" + productId);
+            if (!item || !inp) return;
+
+            var g = parseInt(inp.value, 10);
+            if (isNaN(g) || g < item.minGrams) {
+                if (prev) {
+                    prev.textContent = "⚠️ Минимальный заказ от " + formatMinWeightText(item.minGrams);
+                    prev.classList.add("error-text");
+                }
+                inp.classList.add("input-error");
+                inp.focus();
+                return;
+            }
+
+            cartGrams[productId] = g;
+            openPicker[productId] = false;
+            renderCatalog();
+        }
+
+        function removeItem(productId) {
+            delete cartGrams[productId];
+            openPicker[productId] = false;
+            renderCatalog();
+        }
+
+        function filterCategory(cat, btnElement) {
+            currentCategory = cat;
+            var buttons = document.querySelectorAll(".tab-btn");
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].classList.remove("active");
+            }
+            btnElement.classList.add("active");
+            renderCatalog();
+        }
+
+        function togglePromo() {
+            promoApplied = !promoApplied;
+            var btn = document.getElementById("promoBtn");
+            if (promoApplied) {
+                btn.textContent = "✓ FOREST10 (-10%)";
+                btn.classList.add("applied");
+            } else {
+                btn.textContent = "Применить";
+                btn.classList.remove("applied");
+            }
+            updateBottomBar();
+        }
+
+        function updateBottomBar() {
+            var totalPositions = 0;
+            var totalGramsAll = 0;
+            var totalSum = 0;
+
+            for (var i = 0; i < products.length; i++) {
+                var p = products[i];
+                var g = cartGrams[p.id] || 0;
+                if (g > 0) {
+                    totalPositions += 1;
+                    totalGramsAll += g;
+                    totalSum += calcItemPrice(p, g);
+                }
+            }
+
+            var bar = document.getElementById("bottomBar");
+            if (totalPositions === 0) {
+                bar.style.display = "none";
+                return;
+            }
+
+            bar.style.display = "flex";
+            var finalSum = promoApplied ? Math.round(totalSum * 0.9) : totalSum;
+
+            document.getElementById("cartCountLabel").textContent =
+                "Позиций: " + totalPositions + " (общий вес: " + totalGramsAll + " г)" + (promoApplied ? " • -10%" : "");
+            document.getElementById("cartTotalPrice").textContent =
+                finalSum.toLocaleString("ru-RU") + " ₽";
+        }
+
+        function sendOrder() {
+            var itemsList = [];
+            var totalSum = 0;
+
+            for (var i = 0; i < products.length; i++) {
+                var p = products[i];
+                var g = cartGrams[p.id] || 0;
+                if (g > 0) {
+                    var sub = calcItemPrice(p, g);
+                    totalSum += sub;
+                    itemsList.push({
+                        title: p.title,
+                        grams: g,
+                        subtotal: sub
+                    });
+                }
+            }
+
+            var finalSum = promoApplied ? Math.round(totalSum * 0.9) : totalSum;
+
+            var payload = JSON.stringify({
+                items: itemsList,
+                promo: promoApplied ? "FOREST10" : "Нет",
+                total: finalSum
+            });
+
+            tg.sendData(payload);
+        }
+
+        renderCatalog();
+    </script>
+</body>
+</html>
