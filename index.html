@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Forest Fair — Лесная Ярмарка</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js" async></script>
     <style>
         :root {
             --bg-top: #111916;
@@ -128,7 +128,6 @@
             position: relative;
         }
 
-        /* Тонкий золотой луч-разделитель, плавно исчезающий по краям */
         .header::after {
             content: "";
             display: block;
@@ -203,7 +202,7 @@
             margin: 0 auto;
         }
 
-        /* ПАРЯЩАЯ КАПСУЛА КАТЕГОРИЙ (БЕЗ РЕЗКИХ КРАЕВ) */
+        /* ПАРЯЩАЯ КАПСУЛА КАТЕГОРИЙ */
         .tabs-wrapper {
             position: sticky;
             top: 8px;
@@ -778,8 +777,8 @@
     </div>
 
     <script>
-        var tg = window.Telegram.WebApp;
-        tg.expand();
+        var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+        if (tg) { tg.expand(); }
 
         var promoApplied = false;
         var currentCategory = 'all';
@@ -1118,7 +1117,9 @@
                 total: finalSum
             });
 
-            tg.sendData(payload);
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.sendData(payload);
+            }
         }
 
         renderCatalog();
