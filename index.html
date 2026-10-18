@@ -276,7 +276,7 @@
             box-shadow: 0 3px 12px rgba(245, 185, 66, 0.4);
         }
 
-        /* Кнопка установки PWA — ВСЕГДА ВИДНА */
+        /* Кнопка установки PWA */
         .install-pwa-wrap {
             margin: 10px 14px 4px;
             display: flex;
@@ -626,7 +626,7 @@
             flex-shrink: 0;
         }
 
-        /* Плашка промокода (расположена внизу после каталога) */
+        /* Плашка промокода (расположена после каталога) */
         .promo-section {
             margin: 8px 14px 14px;
             background: linear-gradient(135deg, rgba(59, 43, 28, 0.78) 0%, rgba(25, 43, 33, 0.78) 100%);
@@ -672,7 +672,7 @@
         }
 
         .age-disclaimer {
-            margin: 4px 14px 20px;
+            margin: 4px 14px 16px;
             background: rgba(22, 18, 16, 0.9);
             border: 1.5px solid rgba(224, 83, 71, 0.55);
             border-radius: 16px;
@@ -706,6 +706,57 @@
 
         .age-text b {
             color: #ffb3ad;
+        }
+
+        /* Аккуратный подвал с авторской подписью */
+        .app-footer {
+            text-align: center;
+            margin: 6px auto 35px;
+            padding: 0 16px;
+            font-size: 11.5px;
+            color: #a49685;
+            line-height: 1.6;
+        }
+
+        .footer-brand {
+            font-size: 11px;
+            color: #7d7265;
+            margin-bottom: 4px;
+        }
+
+        .footer-author {
+            color: #c4b5a3;
+        }
+
+        .footer-author a {
+            color: var(--accent-gold);
+            text-decoration: none;
+            font-weight: 700;
+            border-bottom: 1px dotted rgba(245, 185, 66, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        .footer-author a:hover {
+            color: #ffe08a;
+            border-bottom-color: #ffe08a;
+        }
+
+        .footer-github {
+            margin-top: 4px;
+        }
+
+        .footer-github a {
+            color: #9c8e7e;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            transition: color 0.2s ease;
+        }
+
+        .footer-github a:hover {
+            color: var(--accent-gold);
         }
 
         .bottom-bar {
@@ -944,7 +995,7 @@
             </div>
         </div>
 
-        <!-- 1. Кнопка установки приложения СТРОГО между табами и товарами -->
+        <!-- 1. Кнопка установки приложения -->
         <div id="pwaInstallWrap" class="install-pwa-wrap">
             <button id="pwaInstallBtn" class="install-pwa-btn" onclick="installPWA()">
                 📲 <span>Установить приложение</span>
@@ -954,7 +1005,7 @@
         <!-- 2. Каталог товаров -->
         <div id="catalogGrid" class="catalog"></div>
 
-        <!-- 3. Плашка промокода СТРОГО после товаров, перед 18+ -->
+        <!-- 3. Плашка промокода -->
         <div class="promo-section">
             <div class="promo-text">
                 🎁 Промокод <b>FOREST10</b> дает скидку <b>10%</b> на любую продукцию!
@@ -970,6 +1021,23 @@
                 Продукция нашей лавки является натуральным природным сырьем и пищевой добавкой. Не является лекарственным средством или БАД. Перед применением проконсультируйтесь со специалистом.
             </div>
         </div>
+
+        <!-- 5. Авторская подпись в стилистике лавки -->
+        <footer class="app-footer">
+            <div class="footer-brand">🌲 «Forest Fair — Лесная Ярмарка» • г. Томск</div>
+            <div class="footer-author">
+                💻 Автор Digital-архитектуры проекта: 
+                <a href="https://t.me/DJonWeaK" target="_blank" rel="noopener">@DJonWeaK</a>
+            </div>
+            <div class="footer-github">
+                <a href="https://github.com/mikefletcher-byte" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                    </svg>
+                    github.com/mikefletcher-byte
+                </a>
+            </div>
+        </footer>
     </div>
 
     <div id="bottomBar" class="bottom-bar">
@@ -1067,13 +1135,13 @@
             });
         }
 
-        // Прячем кнопку ТОЛЬКО если человек УЖЕ открыл само установленное приложение с иконки на экране
+        // Если приложение уже запущено как установленное с экрана — прячем кнопку установки
         var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         if (isStandalone && pwaWrap) {
             pwaWrap.style.display = 'none';
         }
 
-        // Ловим событие готовности браузера к установке PWA (и НЕ блокируем повторные вызовы)
+        // Ловим событие готовности браузера к установке PWA
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
             deferredPrompt = e;
@@ -1096,17 +1164,16 @@
         }
 
         function installPWA() {
-            // 1. Если браузер дал нативное окно установки — вызываем его:
+            // 1. Если браузер готов к установке в 1 клик
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then(function() {
-                    // Не скрываем кнопку навсегда, чтобы при удалении можно было скачать снова
                     deferredPrompt = null;
                 });
                 return;
             }
 
-            // 2. Проверяем: внутри Telegram или в обычном браузере
+            // 2. Проверяем платформу
             var isInsideTelegram = tg && tg.platform && tg.platform !== 'unknown';
 
             var modal = document.getElementById('pwaModal');
@@ -1129,7 +1196,7 @@
             } else {
                 browserBtnWrap.style.display = 'none';
                 textEl.innerHTML = 
-                    "Чтобы установить <b>Forest Fair</b> (в том числе повторно после удаления):<br><br>" +
+                    "Чтобы установить <b>Forest Fair</b> на рабочий стол:<br><br>" +
                     "Откройте меню браузера <b>⋮</b> (три точки в правом верхнем углу) и нажмите <b>«📲 Установить приложение»</b> (или «Добавить на главный экран»).";
             }
 
@@ -1671,11 +1738,9 @@
             var payload = JSON.stringify(orderObj);
             var isInsideTelegram = tg && tg.platform && tg.platform !== 'unknown';
 
-            // Если открыто внутри Telegram — отправляем штатно через WebApp
             if (isInsideTelegram) {
                 tg.sendData(payload);
             } else {
-                // Если заказ оформлен из отдельного PWA-приложения или браузера — формируем готовое сообщение менеджеру Матвею
                 var textLines = ["🌲 ЗАКАЗ ИЗ ПРИЛОЖЕНИЯ FOREST FAIR 🌲\n"];
                 for (var j = 0; j < itemsList.length; j++) {
                     textLines.push("• " + itemsList[j].title + " — " + itemsList[j].grams + " г (" + itemsList[j].subtotal + " ₽)");
