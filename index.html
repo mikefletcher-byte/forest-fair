@@ -1020,7 +1020,7 @@
     </div>
 
     <script>
-        // Регистрация Service Worker для PWA
+        // Регистрация Service Worker для PWA (для внешних браузеров)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('sw.js').catch(function(err) {
@@ -1029,11 +1029,24 @@
             });
         }
 
-        // Логика установки PWA
+        var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+        if (tg) { 
+            tg.expand(); 
+            // Если бот уже добавлен на экран через Telegram Mini App
+            if (tg.checkHomeScreenStatus) {
+                tg.checkHomeScreenStatus(function(status) {
+                    if (status === 'added') {
+                        var wrap = document.getElementById('pwaInstallWrap');
+                        if (wrap) wrap.style.display = 'none';
+                    }
+                });
+            }
+        }
+
         var deferredPrompt = null;
         var pwaWrap = document.getElementById('pwaInstallWrap');
 
-        // Проверка: запущено ли уже как отдельное PWA приложение
+        // Если открыто как отдельное приложение (standalone PWA) — скрываем кнопку
         var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         if (isStandalone && pwaWrap) {
             pwaWrap.style.display = 'none';
@@ -1053,6 +1066,19 @@
         });
 
         function installPWA() {
+            // 1. Сценарий: Пользователь внутри Telegram Web App
+            if (tg) {
+                // Если Telegram поддерживает прямое добавление на экран
+                if (typeof tg.addToHomeScreen === 'function') {
+                    tg.addToHomeScreen();
+                    return;
+                }
+                // Иначе показываем точную подсказку для меню Telegram (три точки в правом верхнем углу)
+                alert("Чтобы вынести магазин на экран телефона:\n\n1. Нажмите меню ⋮ (три точки) в правом верхнем углу Telegram.\n2. Выберите «Добавить на главный экран» 📲.");
+                return;
+            }
+
+            // 2. Сценарий: Обычный браузер Chrome / Android с поддержкой PWA
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then(function(choiceResult) {
@@ -1061,15 +1087,18 @@
                     }
                     deferredPrompt = null;
                 });
-            } else {
-                // Подсказка для iOS Safari или браузеров без поддержки beforeinstallprompt
-                var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                if (isIOS) {
-                    alert("Чтобы установить приложение на iPhone:\n1. Нажмите иконку «Поделиться» (квадрат со стрелкой вверх) внизу Safari.\n2. Выберите пункт «На экран „Домой“» 📲.");
-                } else {
-                    alert("Чтобы установить приложение:\nНажмите на значок установки в адресной строке браузера или меню (три точки) ➔ «Установить приложение».");
-                }
+                return;
             }
+
+            // 3. Сценарий: iOS Safari (iPhone)
+            var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS) {
+                alert("Чтобы установить на iPhone:\n\n1. Откройте эту ссылку в Safari.\n2. Нажмите кнопку «Поделиться» (квадрат со стрелкой внизу).\n3. Выберите «На экран „Домой“» 📲.");
+                return;
+            }
+
+            // 4. Обычный браузер на ПК или Android
+            alert("Чтобы установить приложение:\n\nНажмите значок установки в адресной строке браузера или в меню браузера (три точки) ➔ «Установить приложение».");
         }
 
         var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
