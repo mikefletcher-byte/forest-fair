@@ -1076,7 +1076,7 @@
         }
 
         function openExternalBrowser() {
-            var url = window.location.href;
+            var url = "https://mikefletcher-byte.github.io/forest-fair/";
             if (tg && tg.openLink) {
                 tg.openLink(url);
             } else {
@@ -1085,7 +1085,7 @@
         }
 
         function installPWA() {
-            // 1. Если браузер (Chrome/Edge/Android) уже готов установить PWA в 1 клик:
+            // 1. Если мы уже в браузере (Chrome/Edge/Android) и он готов установить настоящее PWA в 1 клик:
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then(function(choiceResult) {
@@ -1097,38 +1097,32 @@
                 return;
             }
 
-            // 2. Если открыто внутри Telegram Mini App на телефоне и доступен встроенный ярлык:
-            if (tg && typeof tg.addToHomeScreen === 'function') {
-                try {
-                    tg.addToHomeScreen();
-                } catch (err) {}
-            }
+            // 2. Точная проверка: открыто ли окно ВНУТРИ Telegram (на ПК или смартфоне)
+            var isInsideTelegram = tg && tg.platform && tg.platform !== 'unknown';
 
-            // 3. Показываем красивое фирменное окно в дизайне лавки (вместо системного alert)
             var modal = document.getElementById('pwaModal');
             var textEl = document.getElementById('pwaModalText');
             var browserBtnWrap = document.getElementById('pwaOpenBrowserWrap');
             var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            var isInsideTelegram = tg && tg.initData && tg.initData.length > 0;
 
             if (isInsideTelegram) {
+                // Показываем кнопку прямого открытия в браузере для установки чистого PWA
                 browserBtnWrap.style.display = 'block';
                 textEl.innerHTML = 
-                    "<b>Способ 1 (Прямо из Telegram на телефоне):</b><br>" +
-                    "Нажмите на значок <b>⋮</b> (три точки в правом верхнем углу этого окна) и выберите <b>«Добавить на главный экран»</b>.<br><br>" +
-                    "<b>Способ 2 (Установить как PWA на ПК или телефон):</b><br>" +
-                    "Нажмите кнопку ниже, чтобы открыть витрину в браузере, и нажмите «Установить приложение»!";
+                    "Чтобы иконка на рабочем столе открывала <b>сразу витрину магазина</b> (мимо чата):<br><br>" +
+                    "1. Нажмите зеленую кнопку ниже — витрина откроется в вашем браузере.<br>" +
+                    "2. Нажмите в ней <b>«📲 Установить приложение»</b> — и на экране появится прямая иконка магазина!";
             } else if (isIOS) {
                 browserBtnWrap.style.display = 'none';
                 textEl.innerHTML = 
-                    "Чтобы установить приложение на <b>iPhone / iPad</b>:<br><br>" +
-                    "1. Нажмите иконку <b>«Поделиться»</b> (квадрат со стрелкой внизу экрана Safari).<br>" +
-                    "2. Прокрутите список вниз и выберите <b>«На экран „Домой“» 📲</b>.";
+                    "Чтобы установить магазин на экран <b>iPhone / iPad</b>:<br><br>" +
+                    "1. Нажмите иконку <b>«Поделиться»</b> (квадрат со стрелкой внизу Safari).<br>" +
+                    "2. Выберите <b>«На экран „Домой“» 📲</b> — иконка будет сразу открывать витрину!";
             } else {
                 browserBtnWrap.style.display = 'none';
                 textEl.innerHTML = 
                     "Чтобы установить <b>Forest Fair</b> на рабочий стол:<br><br>" +
-                    "Нажмите на значок установки <b>📲</b> в правой части адресной строки браузера или откройте меню браузера <b>⋮</b> ➔ <b>«Установить приложение»</b>.";
+                    "Нажмите на значок установки <b>📲</b> в правой части адресной строки браузера или в меню браузера <b>⋮</b> ➔ <b>«Установить приложение»</b>.";
             }
 
             modal.style.display = 'flex';
@@ -1653,7 +1647,7 @@
                 ? "Самовывоз (г. Томск)"
                 : (city + (street ? ", ул. " + street : "") + (house ? ", д. " + house : ""));
 
-            var payload = JSON.stringify({
+            var orderObj = {
                 items: itemsList,
                 promo: promoApplied ? "FOREST10 (-10%)" : "Нет",
                 goods_total: totals.goodsSum,
@@ -1664,10 +1658,30 @@
                 payment_method: selectedPaymentMethod,
                 comment: document.getElementById("orderComment").value.trim() || "Нет",
                 total: finalPay
-            });
+            };
 
-            if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.sendData(payload);
+            var payload = JSON.stringify(orderObj);
+            var isInsideTelegram = tg && tg.platform && tg.platform !== 'unknown';
+
+            // Если открыто внутри Telegram — отправляем штатно через WebApp
+            if (isInsideTelegram) {
+                tg.sendData(payload);
+            } else {
+                // Если заказ оформлен из отдельного PWA-приложения или браузера — формируем готовое сообщение менеджеру Матвею
+                var textLines = ["🌲 ЗАКАЗ ИЗ ПРИЛОЖЕНИЯ FOREST FAIR 🌲\n"];
+                for (var j = 0; j < itemsList.length; j++) {
+                    textLines.push("• " + itemsList[j].title + " — " + itemsList[j].grams + " г (" + itemsList[j].subtotal + " ₽)");
+                }
+                textLines.push("\n🎁 Промокод: " + orderObj.promo);
+                textLines.push("🚚 Получение: " + orderObj.delivery_method + " (" + (deliveryCost === 0 ? "Бесплатно" : deliveryCost + " ₽") + ")");
+                textLines.push("📍 Адрес: " + orderObj.address);
+                textLines.push("📞 Телефон: " + orderObj.phone);
+                textLines.push("💳 Оплата: " + orderObj.payment_method);
+                textLines.push("💬 Комментарий: " + orderObj.comment);
+                textLines.push("💰 ИТОГО: " + orderObj.total + " ₽");
+
+                var encodedMsg = encodeURIComponent(textLines.join("\n"));
+                window.location.href = "https://t.me/MBarukh?text=" + encodedMsg;
             }
         }
 
