@@ -1025,7 +1025,7 @@
             },
             {
                 id: "panther_1",
-                title: "Пантерный Мухомор (1-й сорт)",
+                title: "Пантерный Мухомор (Шляпки 1-й сорт)",
                 baseGrams: 50,
                 basePrice: 3500,
                 minGrams: 50,
@@ -1037,7 +1037,7 @@
             },
             {
                 id: "panther_second",
-                title: "Пантерный Мухомор (2-й сорт)",
+                title: "Пантерный Мухомор (Шляпки 2-й сорт)",
                 baseGrams: 50,
                 basePrice: 3000,
                 minGrams: 50,
@@ -1426,7 +1426,8 @@
         function updateModalSummary() {
             var totals = getCartTotals();
             var deliveryCost = 0;
-            var deliveryNote = "0 ₽ (Самовывоз)";
+            var deliveryNote = "Самовывоз (г. Томск)";
+
 
             if (selectedDeliveryMethod === "courier") {
                 if (totals.goodsSum >= 5000) {
