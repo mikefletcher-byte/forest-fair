@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Forest Fair — Лесная Ярмарка</title>
     
-    <!-- PWA Мета-теги и Манифест -->
+    <!-- PWA Мета-теги, Манифест и Иконки -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#111916">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Forest Fair">
-    <link rel="apple-touch-icon" href="logo.jpg">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
 
     <script src="https://telegram.org/js/telegram-web-app.js" async></script>
     <style>
@@ -258,10 +259,10 @@
             box-shadow: 0 3px 12px rgba(245, 185, 66, 0.4);
         }
 
-        /* Кнопка установки PWA */
+        /* Кнопка установки PWA — скрыта по умолчанию, пока браузер не даст добро */
         .install-pwa-wrap {
             margin: 10px 14px 4px;
-            display: flex;
+            display: none;
             justify-content: center;
         }
 
@@ -1046,39 +1047,37 @@
         var deferredPrompt = null;
         var pwaWrap = document.getElementById('pwaInstallWrap');
 
-        // Если открыто как отдельное приложение (standalone PWA) — скрываем кнопку
-        var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-        if (isStandalone && pwaWrap) {
-            pwaWrap.style.display = 'none';
+        // Регистрируем Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./sw.js').then(function(reg) {
+                    console.log('SW зарегистрирован успешно');
+                }).catch(function(err) {
+                    console.warn('Ошибка SW:', err);
+                });
+            });
         }
 
+        // Проверяем Telegram Web App
+        var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+        if (tg) {
+            tg.expand();
+        }
+
+        // Ловим готовность браузера к нативной установке PWA
         window.addEventListener('beforeinstallprompt', function(e) {
+            // Предотвращаем автоматический показ стандартного мини-баннера
             e.preventDefault();
             deferredPrompt = e;
-            if (pwaWrap && !isStandalone) {
+            // Показываем нашу кнопку ТОЛЬКО когда браузер реально готов установить приложение!
+            if (pwaWrap) {
                 pwaWrap.style.display = 'flex';
             }
         });
 
-        window.addEventListener('appinstalled', function() {
-            if (pwaWrap) pwaWrap.style.display = 'none';
-            deferredPrompt = null;
-        });
-
+        // Нажатие на кнопку установки
         function installPWA() {
-            // 1. Сценарий: Пользователь внутри Telegram Web App
-            if (tg) {
-                // Если Telegram поддерживает прямое добавление на экран
-                if (typeof tg.addToHomeScreen === 'function') {
-                    tg.addToHomeScreen();
-                    return;
-                }
-                // Иначе показываем точную подсказку для меню Telegram (три точки в правом верхнем углу)
-                alert("Чтобы вынести магазин на экран телефона:\n\n1. Нажмите меню ⋮ (три точки) в правом верхнем углу Telegram.\n2. Выберите «Добавить на главный экран» 📲.");
-                return;
-            }
-
-            // 2. Сценарий: Обычный браузер Chrome / Android с поддержкой PWA
+            // Сценарий 1: Браузер готов к PWA-установке (Android / Chrome / ПК)
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then(function(choiceResult) {
@@ -1090,16 +1089,31 @@
                 return;
             }
 
-            // 3. Сценарий: iOS Safari (iPhone)
-            var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            if (isIOS) {
-                alert("Чтобы установить на iPhone:\n\n1. Откройте эту ссылку в Safari.\n2. Нажмите кнопку «Поделиться» (квадрат со стрелкой внизу).\n3. Выберите «На экран „Домой“» 📲.");
+            // Сценарий 2: Telegram Web App (прямой вызов встроенного метода Telegram)
+            if (tg && typeof tg.addToHomeScreen === 'function') {
+                tg.addToHomeScreen();
                 return;
             }
 
-            // 4. Обычный браузер на ПК или Android
-            alert("Чтобы установить приложение:\n\nНажмите значок установки в адресной строке браузера или в меню браузера (три точки) ➔ «Установить приложение».");
+            // Сценарий 3: iPhone (Safari)
+            var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS) {
+                alert("Чтобы добавить на экран iPhone:\n1. Нажмите иконку «Поделиться» (квадрат со стрелкой внизу).\n2. Выберите «На экран „Домой“» 📲.");
+                return;
+            }
+
+            // Сценарий 4: Открыто внутри встроенного браузера Telegram на Android
+            if (tg) {
+                alert("Чтобы вынести на рабочий стол:\nНажмите три точки ⋮ в правом верхнем углу Telegram ➔ «Добавить на главный экран».");
+                return;
+            }
         }
+
+        // Если приложение уже установлено — скрываем кнопку
+        window.addEventListener('appinstalled', function() {
+            if (pwaWrap) pwaWrap.style.display = 'none';
+            deferredPrompt = null;
+        });
 
         var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
         if (tg) { tg.expand(); }
