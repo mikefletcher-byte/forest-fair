@@ -1,0 +1,25 @@
+{
+  "name": "Forest Fair — Лесная Ярмарка",
+  "short_name": "Forest Fair",
+  "description": "Сибирская таежная лавка дикоросов, отборных грибов и премиальных чаев",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#111916",
+  "theme_color": "#111916",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

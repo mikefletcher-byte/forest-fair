@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Forest Fair — Лесная Ярмарка</title>
+    
+    <!-- PWA Мета-теги и Манифест -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111916">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Forest Fair">
+    <link rel="apple-touch-icon" href="logo.jpg">
+
     <script src="https://telegram.org/js/telegram-web-app.js" async></script>
     <style>
         :root {
@@ -249,48 +258,41 @@
             box-shadow: 0 3px 12px rgba(245, 185, 66, 0.4);
         }
 
-        .promo-section {
-            margin: 12px 14px 8px;
-            background: linear-gradient(135deg, rgba(59, 43, 28, 0.78) 0%, rgba(25, 43, 33, 0.78) 100%);
-            backdrop-filter: blur(8px);
-            border: 1.5px dashed rgba(245, 185, 66, 0.75);
-            border-radius: 16px;
-            padding: 12px 14px;
+        /* Кнопка установки PWA */
+        .install-pwa-wrap {
+            margin: 10px 14px 4px;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+            justify-content: center;
         }
 
-        .promo-text {
-            font-size: 12.5px;
-            color: var(--text-main);
-            line-height: 1.35;
-        }
-
-        .promo-text b {
+        .install-pwa-btn {
+            width: 100%;
+            background: linear-gradient(135deg, rgba(245, 185, 66, 0.18) 0%, rgba(217, 119, 36, 0.25) 100%);
             color: var(--accent-gold);
-        }
-
-        .promo-btn {
-            background: rgba(245, 185, 66, 0.18);
-            color: var(--accent-gold);
-            border: 1px solid var(--accent-gold);
-            padding: 8px 13px;
-            border-radius: 10px;
-            font-size: 12px;
+            border: 1.5px solid var(--accent-gold);
+            padding: 10px 16px;
+            border-radius: 14px;
+            font-size: 13.5px;
             font-weight: 800;
             cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
+            transition: all 0.25s ease;
         }
 
-        .promo-btn.applied {
-            background: var(--accent-green);
-            color: #fff;
-            border-color: #6ee79e;
-            box-shadow: 0 0 12px rgba(60, 163, 101, 0.5);
+        .install-pwa-btn:hover {
+            background: linear-gradient(135deg, #f5b942 0%, #d97724 100%);
+            color: #14110e;
+            box-shadow: 0 6px 20px rgba(245, 185, 66, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .install-pwa-btn:active {
+            transform: scale(0.98);
         }
 
         .catalog {
@@ -606,8 +608,53 @@
             flex-shrink: 0;
         }
 
+        /* Плашка промокода (теперь расположена внизу после каталога) */
+        .promo-section {
+            margin: 8px 14px 14px;
+            background: linear-gradient(135deg, rgba(59, 43, 28, 0.78) 0%, rgba(25, 43, 33, 0.78) 100%);
+            backdrop-filter: blur(8px);
+            border: 1.5px dashed rgba(245, 185, 66, 0.75);
+            border-radius: 16px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+        }
+
+        .promo-text {
+            font-size: 12.5px;
+            color: var(--text-main);
+            line-height: 1.35;
+        }
+
+        .promo-text b {
+            color: var(--accent-gold);
+        }
+
+        .promo-btn {
+            background: rgba(245, 185, 66, 0.18);
+            color: var(--accent-gold);
+            border: 1px solid var(--accent-gold);
+            padding: 8px 13px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .promo-btn.applied {
+            background: var(--accent-green);
+            color: #fff;
+            border-color: #6ee79e;
+            box-shadow: 0 0 12px rgba(60, 163, 101, 0.5);
+        }
+
         .age-disclaimer {
-            margin: 12px 14px 20px;
+            margin: 4px 14px 20px;
             background: rgba(22, 18, 16, 0.9);
             border: 1.5px solid rgba(224, 83, 71, 0.55);
             border-radius: 16px;
@@ -687,7 +734,6 @@
             box-shadow: 0 4px 15px rgba(245, 185, 66, 0.4);
         }
 
-        /* МОДАЛЬНОЕ ОКНО ОФОРМЛЕНИЯ ДОСТАВКИ И ОПЛАТЫ */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -870,6 +916,7 @@
             <p>Дикоросы, целебные грибы и премиальные чаи с расчетом по граммам</p>
         </div>
 
+        <!-- Табы категорий -->
         <div class="tabs-wrapper">
             <div class="tabs">
                 <button class="tab-btn active" onclick="filterCategory('all', this)">🌿 Все дары</button>
@@ -879,6 +926,17 @@
             </div>
         </div>
 
+        <!-- 1. Кнопка установки приложения СТРОГО между табами и товарами -->
+        <div id="pwaInstallWrap" class="install-pwa-wrap">
+            <button id="pwaInstallBtn" class="install-pwa-btn" onclick="installPWA()">
+                📲 <span>Установить приложение</span>
+            </button>
+        </div>
+
+        <!-- 2. Каталог товаров -->
+        <div id="catalogGrid" class="catalog"></div>
+
+        <!-- 3. Плашка промокода СТРОГО после товаров, перед 18+ -->
         <div class="promo-section">
             <div class="promo-text">
                 🎁 Промокод <b>FOREST10</b> дает скидку <b>10%</b> на любую продукцию!
@@ -886,8 +944,7 @@
             <button id="promoBtn" class="promo-btn" onclick="togglePromo()">Применить</button>
         </div>
 
-        <div id="catalogGrid" class="catalog"></div>
-
+        <!-- 4. Дисклеймер 18+ -->
         <div class="age-disclaimer">
             <div class="age-badge">18+</div>
             <div class="age-text">
@@ -905,7 +962,6 @@
         <button class="checkout-btn" onclick="openCheckoutModal()">📦 Оформить заказ</button>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ДОСТАВКИ И ОПЛАТЫ -->
     <div id="checkoutModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-title">📦 Оформление заказа</div>
@@ -964,6 +1020,58 @@
     </div>
 
     <script>
+        // Регистрация Service Worker для PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js').catch(function(err) {
+                    console.log('SW registration failed:', err);
+                });
+            });
+        }
+
+        // Логика установки PWA
+        var deferredPrompt = null;
+        var pwaWrap = document.getElementById('pwaInstallWrap');
+
+        // Проверка: запущено ли уже как отдельное PWA приложение
+        var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        if (isStandalone && pwaWrap) {
+            pwaWrap.style.display = 'none';
+        }
+
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (pwaWrap && !isStandalone) {
+                pwaWrap.style.display = 'flex';
+            }
+        });
+
+        window.addEventListener('appinstalled', function() {
+            if (pwaWrap) pwaWrap.style.display = 'none';
+            deferredPrompt = null;
+        });
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(function(choiceResult) {
+                    if (choiceResult.outcome === 'accepted') {
+                        if (pwaWrap) pwaWrap.style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                // Подсказка для iOS Safari или браузеров без поддержки beforeinstallprompt
+                var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                if (isIOS) {
+                    alert("Чтобы установить приложение на iPhone:\n1. Нажмите иконку «Поделиться» (квадрат со стрелкой вверх) внизу Safari.\n2. Выберите пункт «На экран „Домой“» 📲.");
+                } else {
+                    alert("Чтобы установить приложение:\nНажмите на значок установки в адресной строке браузера или меню (три точки) ➔ «Установить приложение».");
+                }
+            }
+        }
+
         var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
         if (tg) { tg.expand(); }
 
@@ -1025,7 +1133,7 @@
             },
             {
                 id: "panther_1",
-                title: "Пантерный Мухомор (Шляпки 1-й сорт)",
+                title: "Пантерный Мухомор (шляпки 1-й сорт)",
                 baseGrams: 50,
                 basePrice: 3500,
                 minGrams: 50,
@@ -1037,7 +1145,7 @@
             },
             {
                 id: "panther_second",
-                title: "Пантерный Мухомор (Шляпки 2-й сорт)",
+                title: "Пантерный Мухомор (шляпки 2-й сорт)",
                 baseGrams: 50,
                 basePrice: 3000,
                 minGrams: 50,
@@ -1427,7 +1535,6 @@
             var totals = getCartTotals();
             var deliveryCost = 0;
             var deliveryNote = "Самовывоз (г. Томск)";
-
 
             if (selectedDeliveryMethod === "courier") {
                 if (totals.goodsSum >= 5000) {
