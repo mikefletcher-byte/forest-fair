@@ -1054,6 +1054,11 @@
             <div class="modal-subtitle">Доставка 500 ₽ • При заказе от 5 000 ₽ — БЕСПЛАТНО!</div>
 
             <div class="form-group">
+                <span class="form-label">Ваше имя:</span>
+                <input type="text" id="orderName" class="form-input" placeholder="Как к вам обращаться?">
+            </div>
+
+            <div class="form-group">
                 <span class="form-label">Способ получения:</span>
                 <div class="radio-row">
                     <div id="delivCourier" class="radio-btn active" onclick="setDeliveryMethod('courier')">🚚 Курьер / Доставка</div>
@@ -1100,8 +1105,24 @@
 
             <div class="modal-actions">
                 <button type="button" class="modal-back-btn" onclick="closeCheckoutModal()">← Назад</button>
-                <button type="button" class="modal-submit-btn" onclick="submitFinalOrder()">✓ Подтвердить заказ</button>
+                <button type="button" id="submitOrderBtn" class="modal-submit-btn" onclick="submitFinalOrder()">✓ Подтвердить заказ</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Окно успешного заказа прямо в приложении (без перехода в ТГ) -->
+    <div id="orderSuccessModal" class="modal-overlay" onclick="if(event.target===this) closeSuccessModal()">
+        <div class="modal-box">
+            <div class="modal-title" style="color: #63d48f;">✅ Заказ успешно принят!</div>
+            <div id="orderSuccessSummary" style="font-size: 13px; color: var(--text-main); line-height: 1.5; margin: 10px 0; background: rgba(16,26,20,0.9); padding: 12px; border-radius: 12px; border: 1px solid rgba(99,212,143,0.4);"></div>
+            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.45; margin-bottom: 14px; background: rgba(245,185,66,0.08); padding: 10px; border-radius: 10px; border: 1px dashed rgba(245,185,66,0.4);">
+                <b style="color: var(--accent-gold);">📖 Краткая памятка Forest Fair:</b><br>
+                • <b>Колпаки и шляпки:</b> запивать теплой водой до 40°C (не кипятком!).<br>
+                • <b>Мицелий Ежовика:</b> 1 ч.л. (3–5 г) за 20 мин до еды.<br>
+                • <b>Чай Габба:</b> 85–90°C, 5–7 г на чайник (до 6–8 проливов).<br>
+                • <b>Пуэр:</b> 95–98°C, первую заварку слить через 5 сек.
+            </div>
+            <button type="button" class="modal-submit-btn" style="width: 100%;" onclick="closeSuccessModal()">🌲 Отлично, жду звонка / сообщения!</button>
         </div>
     </div>
 
@@ -1120,13 +1141,13 @@
     </div>
 
     <script>
+        var API_ORDER_URL = "https://89.22.228.22.nip.io/api/order";
         var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
         if (tg) { tg.expand(); }
 
         var deferredPrompt = null;
         var pwaWrap = document.getElementById('pwaInstallWrap');
 
-        // Регистрация Service Worker для PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('./sw.js').catch(function(err) {
@@ -1135,13 +1156,11 @@
             });
         }
 
-        // Если приложение уже запущено как установленное с экрана — прячем кнопку установки
         var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         if (isStandalone && pwaWrap) {
             pwaWrap.style.display = 'none';
         }
 
-        // Ловим событие готовности браузера к установке PWA
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
             deferredPrompt = e;
@@ -1154,6 +1173,10 @@
             document.getElementById('pwaModal').style.display = 'none';
         }
 
+        function closeSuccessModal() {
+            document.getElementById('orderSuccessModal').style.display = 'none';
+        }
+
         function openExternalBrowser() {
             var url = "https://mikefletcher-byte.github.io/forest-fair/";
             if (tg && tg.openLink) {
@@ -1164,7 +1187,6 @@
         }
 
         function installPWA() {
-            // 1. Если браузер готов к установке в 1 клик
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then(function() {
@@ -1173,7 +1195,6 @@
                 return;
             }
 
-            // 2. Проверяем платформу
             var isInsideTelegram = tg && tg.platform && tg.platform !== 'unknown';
 
             var modal = document.getElementById('pwaModal');
@@ -1196,7 +1217,7 @@
             } else {
                 browserBtnWrap.style.display = 'none';
                 textEl.innerHTML = 
-                    "Чтобы установить <b>Forest Fair</b> на рабочий стол:<br><br>" +
+                    "Чтобы установить <b>Forest Fair</b> (в том числе повторно после удаления):<br><br>" +
                     "Откройте меню браузера <b>⋮</b> (три точки в правом верхнем углу) и нажмите <b>«📲 Установить приложение»</b> (или «Добавить на главный экран»).";
             }
 
@@ -1471,7 +1492,7 @@
                     pickerHtml =
                         '<div class="gram-picker">' +
                             '<div class="gram-picker-label">Вес в граммах (мин. ' + formatWeightLabel(item.minGrams) + '):</div>' +
-                            '<div class="preset-row">' + presetsHtml + '</div>' +
+                            '<div class="preset-row">' + presetsHtml + '</div >' +
                             '<div class="gram-input-row">' +
                                 '<input type="number" id="input_' + item.id + '" class="gram-input" value="' + defaultGrams + '" min="' + item.minGrams + '" step="' + stepVal + '" oninput="liveRecalc(\'' + item.id + '\')">' +
                                 '<span class="gram-unit">г</span>' +
@@ -1683,6 +1704,7 @@
         }
 
         function submitFinalOrder() {
+            var customerName = document.getElementById("orderName").value.trim() || "Гость приложения";
             var phone = document.getElementById("orderPhone").value.trim();
             if (!phone) {
                 alert("Пожалуйста, укажите ваш контактный телефон для связи!");
@@ -1723,6 +1745,8 @@
                 : (city + (street ? ", ул. " + street : "") + (house ? ", д. " + house : ""));
 
             var orderObj = {
+                customer_name: customerName,
+                source: isStandalone ? "Установленное PWA-приложение" : "Веб-витрина (Браузер / Соцсети)",
                 items: itemsList,
                 promo: promoApplied ? "FOREST10 (-10%)" : "Нет",
                 goods_total: totals.goodsSum,
@@ -1740,22 +1764,43 @@
 
             if (isInsideTelegram) {
                 tg.sendData(payload);
-            } else {
-                var textLines = ["🌲 ЗАКАЗ ИЗ ПРИЛОЖЕНИЯ FOREST FAIR 🌲\n"];
-                for (var j = 0; j < itemsList.length; j++) {
-                    textLines.push("• " + itemsList[j].title + " — " + itemsList[j].grams + " г (" + itemsList[j].subtotal + " ₽)");
-                }
-                textLines.push("\n🎁 Промокод: " + orderObj.promo);
-                textLines.push("🚚 Получение: " + orderObj.delivery_method + " (" + (deliveryCost === 0 ? "Бесплатно" : deliveryCost + " ₽") + ")");
-                textLines.push("📍 Адрес: " + orderObj.address);
-                textLines.push("📞 Телефон: " + orderObj.phone);
-                textLines.push("💳 Оплата: " + orderObj.payment_method);
-                textLines.push("💬 Комментарий: " + orderObj.comment);
-                textLines.push("💰 ИТОГО: " + orderObj.total + " ₽");
-
-                var encodedMsg = encodeURIComponent(textLines.join("\n"));
-                window.location.href = "https://t.me/MBarukh?text=" + encodedMsg;
+                return;
             }
+
+            var submitBtn = document.getElementById("submitOrderBtn");
+            submitBtn.disabled = true;
+            submitBtn.textContent = "⏳ Отправка заказа...";
+
+            fetch(API_ORDER_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: payload
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "✓ Подтвердить заказ";
+
+                if (data && data.ok) {
+                    closeCheckoutModal();
+                    cartGrams = {};
+                    openPicker = {};
+                    renderCatalog();
+
+                    var summaryHtml =
+                        "Спасибо, <b>" + customerName + "</b>! Ваш заказ на сумму <b>" + finalPay.toLocaleString("ru-RU") + " ₽</b> передан менеджеру Матвею.<br><br>" +
+                        "📞 Мы свяжемся с вами по номеру <b>" + phone + "</b> в ближайшее время для подтверждения доставки!";
+                    document.getElementById("orderSuccessSummary").innerHTML = summaryHtml;
+                    document.getElementById("orderSuccessModal").style.display = "flex";
+                } else {
+                    alert("Произошла ошибка при отправке. Пожалуйста, свяжитесь с менеджером по тел. +7(996)-636-45-66");
+                }
+            })
+            .catch(function() {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "✓ Подтвердить заказ";
+                alert("Не удалось соединиться с сервером. Вы можете позвонить менеджеру Матвею: +7(996)-636-45-66");
+            });
         }
 
         renderCatalog();
