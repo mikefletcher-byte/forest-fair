@@ -15,7 +15,7 @@
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://mikefletcher-byte.github.io/forest-fair/">
 
-    <!-- Разметка Open Graph (для превью в соцсетях и мессенджерах) -->
+    <!-- Разметка Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:title" content="Forest Fair — Сибирская таежная лавка (Томск)">
     <meta property="og:description" content="Таежные дикоросы, мицелий ежовика, целебные лесные сборы и премиальные чаи из сердца Сибири.">
@@ -276,41 +276,45 @@
             box-shadow: 0 3px 12px rgba(245, 185, 66, 0.4);
         }
 
-        /* Кнопка установки PWA */
-        .install-pwa-wrap {
+        .top-actions-bar {
             margin: 10px 14px 4px;
             display: flex;
-            justify-content: center;
+            gap: 8px;
         }
 
-        .install-pwa-btn {
-            width: 100%;
+        .install-pwa-btn, .my-orders-btn {
+            flex: 1;
             background: linear-gradient(135deg, rgba(245, 185, 66, 0.18) 0%, rgba(217, 119, 36, 0.25) 100%);
             color: var(--accent-gold);
             border: 1.5px solid var(--accent-gold);
-            padding: 10px 16px;
+            padding: 10px 12px;
             border-radius: 14px;
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: 800;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
             box-shadow: 0 4px 16px rgba(0,0,0,0.4);
             backdrop-filter: blur(8px);
             transition: all 0.25s ease;
         }
 
+        .my-orders-btn {
+            background: linear-gradient(135deg, rgba(60, 163, 101, 0.2) 0%, rgba(36, 112, 66, 0.3) 100%);
+            color: #98f5be;
+            border-color: #48bf76;
+        }
+
         .install-pwa-btn:hover {
             background: linear-gradient(135deg, #f5b942 0%, #d97724 100%);
             color: #14110e;
-            box-shadow: 0 6px 20px rgba(245, 185, 66, 0.4);
-            transform: translateY(-1px);
         }
 
-        .install-pwa-btn:active {
-            transform: scale(0.98);
+        .my-orders-btn:hover {
+            background: linear-gradient(135deg, #3ca365 0%, #247042 100%);
+            color: #fff;
         }
 
         .catalog {
@@ -323,6 +327,9 @@
         @media (max-width: 440px) {
             .catalog {
                 grid-template-columns: 1fr;
+            }
+            .top-actions-bar {
+                flex-direction: column;
             }
         }
 
@@ -490,15 +497,6 @@
             flex-shrink: 0;
         }
 
-        .add-btn:hover {
-            transform: scale(1.04);
-            box-shadow: 0 4px 14px rgba(60, 163, 101, 0.55);
-        }
-
-        .add-btn:active {
-            transform: scale(0.96);
-        }
-
         .gram-picker {
             background: rgba(14, 20, 16, 0.96);
             border: 1.5px solid var(--accent-gold);
@@ -534,11 +532,6 @@
             cursor: pointer;
         }
 
-        .preset-chip:hover, .preset-chip:active {
-            border-color: var(--accent-gold);
-            color: #fff;
-        }
-
         .gram-input-row {
             display: flex;
             align-items: center;
@@ -556,11 +549,6 @@
             font-weight: 800;
             text-align: center;
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .gram-input:focus {
-            border-color: var(--accent-gold);
         }
 
         .gram-input.input-error {
@@ -626,7 +614,6 @@
             flex-shrink: 0;
         }
 
-        /* Плашка промокода (расположена после каталога) */
         .promo-section {
             margin: 8px 14px 14px;
             background: linear-gradient(135deg, rgba(59, 43, 28, 0.78) 0%, rgba(25, 43, 33, 0.78) 100%);
@@ -661,14 +648,71 @@
             font-weight: 800;
             cursor: pointer;
             white-space: nowrap;
-            transition: all 0.2s ease;
         }
 
         .promo-btn.applied {
             background: var(--accent-green);
             color: #fff;
             border-color: #6ee79e;
-            box-shadow: 0 0 12px rgba(60, 163, 101, 0.5);
+        }
+
+        /* Блок контактов и площадок */
+        .contacts-section {
+            margin: 4px 14px 14px;
+            background: rgba(18, 25, 21, 0.88);
+            border: 1.5px solid rgba(245, 185, 66, 0.4);
+            border-radius: 18px;
+            padding: 14px;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.45);
+        }
+
+        .contacts-title {
+            font-family: Georgia, serif;
+            font-size: 15px;
+            font-weight: 900;
+            color: var(--accent-gold);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .contacts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        @media (max-width: 440px) {
+            .contacts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .contact-card-link {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            background: rgba(34, 42, 36, 0.85);
+            border: 1px solid rgba(245, 185, 66, 0.3);
+            padding: 10px 12px;
+            border-radius: 12px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 12.5px;
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+
+        .contact-card-link:hover {
+            border-color: var(--accent-gold);
+            background: rgba(245, 185, 66, 0.14);
+            transform: translateY(-1px);
+        }
+
+        .contact-sub {
+            display: block;
+            font-size: 10.5px;
+            color: var(--text-muted);
+            font-weight: 400;
         }
 
         .age-disclaimer {
@@ -695,7 +739,6 @@
             align-items: center;
             justify-content: center;
             border: 2px solid #ff9e96;
-            box-shadow: 0 0 12px rgba(224, 83, 71, 0.5);
         }
 
         .age-text {
@@ -708,7 +751,6 @@
             color: #ffb3ad;
         }
 
-        /* Аккуратный подвал с авторской подписью */
         .app-footer {
             text-align: center;
             margin: 6px auto 35px;
@@ -724,21 +766,11 @@
             margin-bottom: 4px;
         }
 
-        .footer-author {
-            color: #c4b5a3;
-        }
-
         .footer-author a {
             color: var(--accent-gold);
             text-decoration: none;
             font-weight: 700;
             border-bottom: 1px dotted rgba(245, 185, 66, 0.5);
-            transition: all 0.2s ease;
-        }
-
-        .footer-author a:hover {
-            color: #ffe08a;
-            border-bottom-color: #ffe08a;
         }
 
         .footer-github {
@@ -752,11 +784,6 @@
             align-items: center;
             gap: 5px;
             font-size: 11px;
-            transition: color 0.2s ease;
-        }
-
-        .footer-github a:hover {
-            color: var(--accent-gold);
         }
 
         .bottom-bar {
@@ -872,14 +899,12 @@
             font-weight: 800;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s;
         }
 
         .radio-btn.active {
             background: rgba(245, 185, 66, 0.18);
             border-color: var(--accent-gold);
             color: #fff;
-            box-shadow: 0 0 12px rgba(245, 185, 66, 0.25);
         }
 
         .form-input {
@@ -891,10 +916,6 @@
             padding: 9px 11px;
             font-size: 13px;
             outline: none;
-        }
-
-        .form-input:focus {
-            border-color: var(--accent-gold);
         }
 
         .form-row-2 {
@@ -944,7 +965,28 @@
             font-size: 14px;
             font-weight: 900;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(60, 163, 101, 0.4);
+        }
+
+        .order-history-card {
+            background: rgba(16, 24, 19, 0.95);
+            border: 1px solid rgba(245, 185, 66, 0.45);
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 10px;
+            font-size: 12.5px;
+            line-height: 1.45;
+        }
+
+        .order-status-pill {
+            display: inline-block;
+            background: rgba(245, 185, 66, 0.16);
+            color: var(--accent-gold);
+            border: 1px solid rgba(245, 185, 66, 0.5);
+            padding: 4px 9px;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 11.5px;
+            margin: 5px 0;
         }
     </style>
 </head>
@@ -995,17 +1037,20 @@
             </div>
         </div>
 
-        <!-- 1. Кнопка установки приложения -->
-        <div id="pwaInstallWrap" class="install-pwa-wrap">
+        <!-- Верхняя панель: Установка приложения + Мои заказы (Статус) -->
+        <div class="top-actions-bar">
             <button id="pwaInstallBtn" class="install-pwa-btn" onclick="installPWA()">
                 📲 <span>Установить приложение</span>
             </button>
+            <button id="myOrdersBtn" class="my-orders-btn" onclick="openMyOrdersModal()">
+                📦 <span id="myOrdersBtnLabel">Мои заказы и статус</span>
+            </button>
         </div>
 
-        <!-- 2. Каталог товаров -->
+        <!-- Каталог товаров -->
         <div id="catalogGrid" class="catalog"></div>
 
-        <!-- 3. Плашка промокода -->
+        <!-- Плашка промокода -->
         <div class="promo-section">
             <div class="promo-text">
                 🎁 Промокод <b>FOREST10</b> дает скидку <b>10%</b> на любую продукцию!
@@ -1013,7 +1058,42 @@
             <button id="promoBtn" class="promo-btn" onclick="togglePromo()">Применить</button>
         </div>
 
-        <!-- 4. Дисклеймер 18+ -->
+        <!-- Блок контактов и сообществ -->
+        <div class="contacts-section">
+            <div class="contacts-title">🌲 Контакты и наши площадки</div>
+            <div class="contacts-grid">
+                <a href="tel:+79966364566" class="contact-card-link">
+                    <span style="font-size: 20px;">📞</span>
+                    <div>
+                        Позвонить менеджеру
+                        <span class="contact-sub">Матвей: +7 (996) 636-45-66</span>
+                    </div>
+                </a>
+                <a href="https://t.me/MBarukh" target="_blank" rel="noopener" class="contact-card-link">
+                    <span style="font-size: 20px;">💬</span>
+                    <div>
+                        Личка менеджера в ТГ
+                        <span class="contact-sub">@MBarukh • Заказы и вопросы</span>
+                    </div>
+                </a>
+                <a href="https://t.me/ForestFair70" target="_blank" rel="noopener" class="contact-card-link">
+                    <span style="font-size: 20px;">🌲</span>
+                    <div>
+                        Сообщество в Telegram
+                        <span class="contact-sub">@ForestFair70 • Отзывы и блог</span>
+                    </div>
+                </a>
+                <a href="https://t.me/ForestFair70_bot" target="_blank" rel="noopener" class="contact-card-link">
+                    <span style="font-size: 20px;">🤖</span>
+                    <div>
+                        Онлайн-консультант 24/7
+                        <span class="contact-sub">@ForestFair70_bot • Подбор курса</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Дисклеймер 18+ -->
         <div class="age-disclaimer">
             <div class="age-badge">18+</div>
             <div class="age-text">
@@ -1022,7 +1102,7 @@
             </div>
         </div>
 
-        <!-- 5. Авторская подпись в стилистике лавки -->
+        <!-- Авторская подпись -->
         <footer class="app-footer">
             <div class="footer-brand">🌲 «Forest Fair — Лесная Ярмарка» • г. Томск</div>
             <div class="footer-author">
@@ -1048,6 +1128,7 @@
         <button class="checkout-btn" onclick="openCheckoutModal()">📦 Оформить заказ</button>
     </div>
 
+    <!-- Модальное окно оформления заказа -->
     <div id="checkoutModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-title">📦 Оформление заказа</div>
@@ -1110,7 +1191,7 @@
         </div>
     </div>
 
-    <!-- Окно успешного заказа прямо в приложении (без перехода в ТГ) -->
+    <!-- Окно успешного заказа -->
     <div id="orderSuccessModal" class="modal-overlay" onclick="if(event.target===this) closeSuccessModal()">
         <div class="modal-box">
             <div class="modal-title" style="color: #63d48f;">✅ Заказ успешно принят!</div>
@@ -1122,11 +1203,33 @@
                 • <b>Чай Габба:</b> 85–90°C, 5–7 г на чайник (до 6–8 проливов).<br>
                 • <b>Пуэр:</b> 95–98°C, первую заварку слить через 5 сек.
             </div>
-            <button type="button" class="modal-submit-btn" style="width: 100%;" onclick="closeSuccessModal()">🌲 Отлично, жду звонка / сообщения!</button>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="modal-back-btn" style="flex: 1;" onclick="closeSuccessModal(); openMyOrdersModal();">📦 Статус заказа</button>
+                <button type="button" class="modal-submit-btn" style="flex: 1;" onclick="closeSuccessModal()">🌲 Отлично!</button>
+            </div>
         </div>
     </div>
 
-    <!-- Фирменное модальное окно установки PWA -->
+    <!-- Модальное окно отслеживания своих заказов -->
+    <div id="myOrdersModal" class="modal-overlay" onclick="if(event.target===this) closeMyOrdersModal()">
+        <div class="modal-box">
+            <div class="modal-title">📦 Мои заказы и статус</div>
+            <div class="modal-subtitle">Статус обновляется в реальном времени</div>
+
+            <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+                <input type="tel" id="searchOrdersPhone" class="form-input" placeholder="Поиск по вашему телефону...">
+                <button type="button" class="promo-btn" onclick="searchOrdersByPhone()">Найти</button>
+            </div>
+
+            <div id="myOrdersList" style="max-height: 52vh; overflow-y: auto;"></div>
+
+            <div class="modal-actions">
+                <button type="button" class="modal-back-btn" style="width: 100%;" onclick="closeMyOrdersModal()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно установки PWA -->
     <div id="pwaModal" class="modal-overlay" onclick="if(event.target===this) closePwaModal()">
         <div class="modal-box" style="text-align: center;">
             <div class="modal-title">📲 Установка Forest Fair</div>
@@ -1141,12 +1244,15 @@
     </div>
 
     <script>
-        var API_ORDER_URL = "https://89.22.228.22.nip.io/api/order";
+        var API_BASE_URL = "https://89.22.228.22.nip.io";
+        var API_ORDER_URL = API_BASE_URL + "/api/order";
+        var API_ORDERS_GET_URL = API_BASE_URL + "/api/orders";
+
         var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
         if (tg) { tg.expand(); }
 
         var deferredPrompt = null;
-        var pwaWrap = document.getElementById('pwaInstallWrap');
+        var pwaBtn = document.getElementById('pwaInstallBtn');
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
@@ -1157,17 +1263,155 @@
         }
 
         var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-        if (isStandalone && pwaWrap) {
-            pwaWrap.style.display = 'none';
+        if (isStandalone && pwaBtn) {
+            pwaBtn.style.display = 'none';
         }
 
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
             deferredPrompt = e;
-            if (pwaWrap && !isStandalone) {
-                pwaWrap.style.display = 'flex';
+            if (pwaBtn && !isStandalone) {
+                pwaBtn.style.display = 'flex';
             }
         });
+
+        function getSavedOrderIds() {
+            try {
+                var raw = localStorage.getItem("ff_order_ids");
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveOrderIdLocal(orderId) {
+            try {
+                var list = getSavedOrderIds();
+                if (list.indexOf(orderId) === -1) {
+                    list.push(orderId);
+                    localStorage.setItem("ff_order_ids", JSON.stringify(list));
+                }
+                updateMyOrdersButtonBadge();
+            } catch (e) {}
+        }
+
+        function updateMyOrdersButtonBadge() {
+            var list = getSavedOrderIds();
+            var lbl = document.getElementById("myOrdersBtnLabel");
+            if (lbl) {
+                lbl.textContent = list.length > 0 ? ("Мои заказы (" + list.length + ")") : "Мои заказы и статус";
+            }
+        }
+
+        function openMyOrdersModal() {
+            document.getElementById("myOrdersModal").style.display = "flex";
+            loadMyOrdersFromServer();
+        }
+
+        function closeMyOrdersModal() {
+            document.getElementById("myOrdersModal").style.display = "none";
+        }
+
+        function renderOrdersListHtml(orders) {
+            var container = document.getElementById("myOrdersList");
+            if (!orders || orders.length === 0) {
+                container.innerHTML =
+                    '<div style="text-align:center; color: var(--text-muted); padding: 20px 10px; font-size: 13px;">' +
+                    'У вас пока нет сохраненных заказов на этом устройстве.<br><br>' +
+                    'Если вы оформляли заказ ранее — введите ваш номер телефона в поле выше и нажмите <b>«Найти»</b>!' +
+                    '</div>';
+                return;
+            }
+
+            var html = "";
+            for (var i = 0; i < orders.length; i++) {
+                var o = orders[i];
+                var itemsLines = [];
+                var items = o.items || [];
+                for (var j = 0; j < items.length; j++) {
+                    itemsLines.push("• " + items[j].title + " (" + items[j].grams + " г)");
+                }
+                var trackHtml = o.track_number
+                    ? ('<div style="margin-top:5px; color:#8ce8b1;">🚚 <b>Трек-номер:</b> <code>' + o.track_number + '</code></div>')
+                    : '';
+
+                html +=
+                    '<div class="order-history-card">' +
+                        '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+                            '<b style="color:var(--accent-gold); font-size:14px;">Заказ #' + o.order_id + '</b>' +
+                            '<span style="font-size:11px; color:var(--text-muted);">' + (o.created_at || '') + '</span>' +
+                        '</div>' +
+                        '<div class="order-status-pill">' + (o.status_text || '🟡 Принят') + '</div>' +
+                        trackHtml +
+                        '<div style="margin-top:6px; color:#e6d7c3;">' + itemsLines.join("<br>") + '</div>' +
+                        '<div style="margin-top:6px; border-top:1px solid rgba(255,255,255,0.08); padding-top:5px; display:flex; justify-content:space-between;">' +
+                            '<span style="color:var(--text-muted);">' + (o.delivery_method || '') + '</span>' +
+                            '<b style="color:var(--accent-gold);">Итого: ' + Number(o.total || 0).toLocaleString("ru-RU") + ' ₽</b>' +
+                        '</div>' +
+                    '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function loadMyOrdersFromServer() {
+            var container = document.getElementById("myOrdersList");
+            var ids = getSavedOrderIds();
+            var savedPhone = "";
+            try { savedPhone = localStorage.getItem("ff_last_phone") || ""; } catch (e) {}
+
+            if (savedPhone && !document.getElementById("searchOrdersPhone").value) {
+                document.getElementById("searchOrdersPhone").value = savedPhone;
+            }
+
+            if (ids.length === 0 && !savedPhone) {
+                renderOrdersListHtml([]);
+                return;
+            }
+
+            container.innerHTML = '<div style="text-align:center; padding:18px; color:var(--accent-gold);">⏳ Загрузка актуального статуса...</div>';
+
+            var query = ids.length > 0
+                ? ("?ids=" + encodeURIComponent(ids.join(",")))
+                : ("?phone=" + encodeURIComponent(savedPhone));
+
+            fetch(API_ORDERS_GET_URL + query)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data && data.ok) {
+                        renderOrdersListHtml(data.orders);
+                    } else {
+                        renderOrdersListHtml([]);
+                    }
+                })
+                .catch(function() {
+                    container.innerHTML = '<div style="text-align:center; padding:16px; color:var(--danger);">Не удалось обновить статус. Проверьте интернет или позвоните менеджеру: +7(996)-636-45-66</div>';
+                });
+        }
+
+        function searchOrdersByPhone() {
+            var ph = document.getElementById("searchOrdersPhone").value.trim();
+            if (!ph) return;
+            try { localStorage.setItem("ff_last_phone", ph); } catch (e) {}
+
+            var container = document.getElementById("myOrdersList");
+            container.innerHTML = '<div style="text-align:center; padding:18px; color:var(--accent-gold);">🔍 Поиск заказов по номеру...</div>';
+
+            fetch(API_ORDERS_GET_URL + "?phone=" + encodeURIComponent(ph))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data && data.ok) {
+                        for (var i = 0; i < data.orders.length; i++) {
+                            saveOrderIdLocal(data.orders[i].order_id);
+                        }
+                        renderOrdersListHtml(data.orders);
+                    } else {
+                        renderOrdersListHtml([]);
+                    }
+                })
+                .catch(function() {
+                    renderOrdersListHtml([]);
+                });
+        }
 
         function closePwaModal() {
             document.getElementById('pwaModal').style.display = 'none';
@@ -1196,7 +1440,6 @@
             }
 
             var isInsideTelegram = tg && tg.platform && tg.platform !== 'unknown';
-
             var modal = document.getElementById('pwaModal');
             var textEl = document.getElementById('pwaModalText');
             var browserBtnWrap = document.getElementById('pwaOpenBrowserWrap');
@@ -1492,7 +1735,7 @@
                     pickerHtml =
                         '<div class="gram-picker">' +
                             '<div class="gram-picker-label">Вес в граммах (мин. ' + formatWeightLabel(item.minGrams) + '):</div>' +
-                            '<div class="preset-row">' + presetsHtml + '</div >' +
+                            '<div class="preset-row">' + presetsHtml + '</div>' +
                             '<div class="gram-input-row">' +
                                 '<input type="number" id="input_' + item.id + '" class="gram-input" value="' + defaultGrams + '" min="' + item.minGrams + '" step="' + stepVal + '" oninput="liveRecalc(\'' + item.id + '\')">' +
                                 '<span class="gram-unit">г</span>' +
@@ -1759,6 +2002,8 @@
                 total: finalPay
             };
 
+            try { localStorage.setItem("ff_last_phone", phone); } catch (e) {}
+
             var payload = JSON.stringify(orderObj);
             var isInsideTelegram = tg && tg.platform && tg.platform !== 'unknown';
 
@@ -1782,14 +2027,20 @@
                 submitBtn.textContent = "✓ Подтвердить заказ";
 
                 if (data && data.ok) {
+                    var ordId = (data.order && data.order.order_id) ? data.order.order_id : "";
+                    if (ordId) {
+                        saveOrderIdLocal(ordId);
+                    }
+
                     closeCheckoutModal();
                     cartGrams = {};
                     openPicker = {};
                     renderCatalog();
 
                     var summaryHtml =
-                        "Спасибо, <b>" + customerName + "</b>! Ваш заказ на сумму <b>" + finalPay.toLocaleString("ru-RU") + " ₽</b> передан менеджеру Матвею.<br><br>" +
-                        "📞 Мы свяжемся с вами по номеру <b>" + phone + "</b> в ближайшее время для подтверждения доставки!";
+                        "Спасибо, <b>" + customerName + "</b>! Ваш <b>Заказ #" + ordId + "</b> на сумму <b>" + finalPay.toLocaleString("ru-RU") + " ₽</b> передан менеджеру Матвею.<br><br>" +
+                        "📞 Мы свяжемся с вами по номеру <b>" + phone + "</b> в ближайшее время.<br>" +
+                        "📦 Отслеживать статус сборки и трек-номер доставки вы можете прямо в приложении по кнопке <b>«Мои заказы и статус»</b>!";
                     document.getElementById("orderSuccessSummary").innerHTML = summaryHtml;
                     document.getElementById("orderSuccessModal").style.display = "flex";
                 } else {
@@ -1803,6 +2054,7 @@
             });
         }
 
+        updateMyOrdersButtonBadge();
         renderCatalog();
     </script>
 </body>
