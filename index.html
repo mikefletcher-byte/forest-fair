@@ -1954,6 +1954,19 @@
         }
 
         function submitFinalOrder() {
+            var totals = getCartTotals();
+            if (totals.positions === 0 || totals.goodsSum <= 0) {
+                alert("Ваша корзина пуста! Пожалуйста, выберите хотя бы один товар.");
+                closeCheckoutModal();
+                return;
+            }
+
+            var phone = document.getElementById("orderPhone").value.trim();
+            if (!phone || phone.replace(/\D/g, '').length < 6) {
+                alert("Пожалуйста, укажите корректный контактный телефон для связи!");
+                document.getElementById("orderPhone").focus();
+                return;
+            }
             var customerName = document.getElementById("orderName").value.trim() || "Гость приложения";
             var phone = document.getElementById("orderPhone").value.trim();
             if (!phone) {
