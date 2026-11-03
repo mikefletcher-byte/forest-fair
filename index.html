@@ -317,6 +317,9 @@
             color: #fff;
         }
 
+        .auth-btn { flex:1; background:linear-gradient(135deg,rgba(60,163,101,.2),rgba(36,112,66,.3)); color:#b4f6ca; border:1.5px solid #48bf76; padding:10px 12px; border-radius:14px; font-size:13px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
+        .auth-status { color:#98f5be; font-size:12px; text-align:center; margin:0 14px 8px; min-height:16px; }
+        .auth-provider-btn { width:100%; background:linear-gradient(135deg,#3ca365,#247042); color:#fff; border:1px solid #63d48f; padding:12px; border-radius:11px; font-size:14px; font-weight:800; cursor:pointer; margin:6px 0; }
         .catalog {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -1039,6 +1042,7 @@
 
         <!-- Верхняя панель: Установка приложения + Мои заказы (Статус) -->
         <div class="top-actions-bar">
+            <button id="authOpenBtn" class="auth-btn" onclick="openAuthModal()">👤 <span id="authOpenBtnLabel">Войти / Мой аккаунт</span></button>
             <button id="pwaInstallBtn" class="install-pwa-btn" onclick="installPWA()">
                 📲 <span>Установить приложение</span>
             </button>
@@ -1047,6 +1051,7 @@
             </button>
         </div>
 
+        <div id="authStatusLine" class="auth-status" aria-live="polite"></div>
         <!-- Каталог товаров -->
         <div id="catalogGrid" class="catalog"></div>
 
@@ -1127,6 +1132,7 @@
         <button class="checkout-btn" onclick="openCheckoutModal()">📦 Оформить заказ</button>
     </div>
 
+    <div id="authModal" class="modal-overlay" onclick="if(event.target===this) closeAuthModal()"><div class="modal-box"><div class="modal-title">👤 Аккаунт Forest Fair</div><div class="modal-subtitle">Войдите, чтобы оформлять заказы и видеть историю</div><div id="authModalMessage" class="delivery-summary-box" aria-live="polite">Выберите способ входа.</div><button type="button" id="telegramLoginBtn" class="auth-provider-btn" onclick="loginWithTelegram()">✈️ Продолжить через Telegram</button><div class="modal-actions"><button type="button" class="modal-back-btn" style="width:100%;" onclick="closeAuthModal()">Закрыть</button><button type="button" id="authLogoutBtn" class="modal-back-btn" style="display:none;flex:1;" onclick="logoutForestFair()">Выйти</button></div></div></div>
     <!-- Модальное окно оформления заказа -->
     <div id="checkoutModal" class="modal-overlay">
         <div class="modal-box">
@@ -1216,8 +1222,7 @@
             <div class="modal-subtitle">Статус обновляется в реальном времени</div>
 
             <div style="display: flex; gap: 6px; margin-bottom: 12px;">
-                <input type="tel" id="searchOrdersPhone" class="form-input" placeholder="Поиск по вашему телефону...">
-                <button type="button" class="promo-btn" onclick="searchOrdersByPhone()">Найти</button>
+                <button type="button" class="promo-btn" onclick="loadMyOrdersFromServer()">Обновить мои заказы</button>
             </div>
 
             <div id="myOrdersList" style="max-height: 52vh; overflow-y: auto;"></div>
@@ -1242,11 +1247,8 @@
         </div>
     </div>
 
+    <script src="./auth-client.js"></script>
     <script>
-        var API_BASE_URL = "https://89.22.228.22.nip.io";
-        var API_ORDER_URL = API_BASE_URL + "/api/order";
-        var API_ORDERS_GET_URL = API_BASE_URL + "/api/orders";
-
         var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
         if (tg) { tg.expand(); }
 
@@ -1274,32 +1276,9 @@
             }
         });
 
-        function getSavedOrderIds() {
-            try {
-                var raw = localStorage.getItem("ff_order_ids");
-                return raw ? JSON.parse(raw) : [];
-            } catch (e) {
-                return [];
-            }
-        }
-
-        function saveOrderIdLocal(orderId) {
-            try {
-                var list = getSavedOrderIds();
-                if (list.indexOf(orderId) === -1) {
-                    list.push(orderId);
-                    localStorage.setItem("ff_order_ids", JSON.stringify(list));
-                }
-                updateMyOrdersButtonBadge();
-            } catch (e) {}
-        }
-
         function updateMyOrdersButtonBadge() {
-            var list = getSavedOrderIds();
             var lbl = document.getElementById("myOrdersBtnLabel");
-            if (lbl) {
-                lbl.textContent = list.length > 0 ? ("Мои заказы (" + list.length + ")") : "Мои заказы и статус";
-            }
+            if (lbl) lbl.textContent = "Мои заказы и статус";
         }
 
         function openMyOrdersModal() {
@@ -1316,8 +1295,8 @@
             if (!orders || orders.length === 0) {
                 container.innerHTML =
                     '<div style="text-align:center; color: var(--text-muted); padding: 20px 10px; font-size: 13px;">' +
-                    'У вас пока нет сохраненных заказов на этом устройстве.<br><br>' +
-                    'Если вы оформляли заказ ранее — введите ваш номер телефона в поле выше и нажмите <b>«Найти»</b>!' +
+                    'В этом аккаунте пока нет заказов.<br><br>' +
+                    'Заказы, оформленные до появления единой авторизации, не привязываются автоматически. Для уточнения старого заказа свяжитесь с менеджером Forest Fair.' +
                     '</div>';
                 return;
             }
@@ -1354,61 +1333,22 @@
 
         function loadMyOrdersFromServer() {
             var container = document.getElementById("myOrdersList");
-            var ids = getSavedOrderIds();
-            var savedPhone = "";
-            try { savedPhone = localStorage.getItem("ff_last_phone") || ""; } catch (e) {}
-
-            if (savedPhone && !document.getElementById("searchOrdersPhone").value) {
-                document.getElementById("searchOrdersPhone").value = savedPhone;
-            }
-
-            if (ids.length === 0 && !savedPhone) {
+            if (!ForestFairAuth.isSignedIn()) {
                 renderOrdersListHtml([]);
+                openAuthModal();
                 return;
             }
 
-            container.innerHTML = '<div style="text-align:center; padding:18px; color:var(--accent-gold);">⏳ Загрузка актуального статуса...</div>';
-
-            var query = ids.length > 0
-                ? ("?ids=" + encodeURIComponent(ids.join(",")))
-                : ("?phone=" + encodeURIComponent(savedPhone));
-
-            fetch(API_ORDERS_GET_URL + query)
-                .then(function(r) { return r.json(); })
+            container.innerHTML = '<div style="text-align:center; padding:18px; color:var(--accent-gold);">⏳ Загружаем ваши заказы...</div>';
+            ForestFairAuth.request("/api/orders", { method: "GET" })
                 .then(function(data) {
-                    if (data && data.ok) {
-                        renderOrdersListHtml(data.orders);
-                    } else {
-                        renderOrdersListHtml([]);
-                    }
+                    renderOrdersListHtml(Array.isArray(data.orders) ? data.orders : []);
                 })
-                .catch(function() {
-                    container.innerHTML = '<div style="text-align:center; padding:16px; color:var(--danger);">Не удалось обновить статус. Проверьте интернет или позвоните менеджеру: +7(996)-636-45-66</div>';
-                });
-        }
-
-        function searchOrdersByPhone() {
-            var ph = document.getElementById("searchOrdersPhone").value.trim();
-            if (!ph) return;
-            try { localStorage.setItem("ff_last_phone", ph); } catch (e) {}
-
-            var container = document.getElementById("myOrdersList");
-            container.innerHTML = '<div style="text-align:center; padding:18px; color:var(--accent-gold);">🔍 Поиск заказов по номеру...</div>';
-
-            fetch(API_ORDERS_GET_URL + "?phone=" + encodeURIComponent(ph))
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (data && data.ok) {
-                        for (var i = 0; i < data.orders.length; i++) {
-                            saveOrderIdLocal(data.orders[i].order_id);
-                        }
-                        renderOrdersListHtml(data.orders);
-                    } else {
-                        renderOrdersListHtml([]);
-                    }
-                })
-                .catch(function() {
-                    renderOrdersListHtml([]);
+                .catch(function(error) {
+                    if (!ForestFairAuth.isSignedIn()) setAuthUi(null);
+                    container.innerHTML = '<div style="text-align:center; padding:16px; color:var(--danger);">' +
+                        (error.message || "Не удалось загрузить историю заказов. Попробуйте войти снова.") +
+                        '</div>';
                 });
         }
 
@@ -1900,6 +1840,7 @@
         }
 
         function openCheckoutModal() {
+            if (!ForestFairAuth.isSignedIn()) { window.ffPendingCheckout = true; openAuthModal(); return; }
             document.getElementById("checkoutModal").style.display = "flex";
             updateModalSummary();
         }
@@ -2001,36 +1942,21 @@
                 total: finalPay
             };
 
-            try { localStorage.setItem("ff_last_phone", phone); } catch (e) {}
-
             var payload = JSON.stringify(orderObj);
-            var isInsideTelegram = tg && tg.platform && tg.platform !== 'unknown';
-
-            if (isInsideTelegram) {
-                tg.sendData(payload);
-                return;
-            }
-
             var submitBtn = document.getElementById("submitOrderBtn");
             submitBtn.disabled = true;
             submitBtn.textContent = "⏳ Отправка заказа...";
 
-            fetch(API_ORDER_URL, {
+            ForestFairAuth.request("/api/order", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 body: payload
             })
-            .then(function(res) { return res.json(); })
             .then(function(data) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = "✓ Подтвердить заказ";
 
                 if (data && data.ok) {
                     var ordId = (data.order && data.order.order_id) ? data.order.order_id : "";
-                    if (ordId) {
-                        saveOrderIdLocal(ordId);
-                    }
-
                     closeCheckoutModal();
                     cartGrams = {};
                     openPicker = {};
@@ -2042,19 +1968,52 @@
                         "📦 Отслеживать статус сборки и трек-номер доставки вы можете прямо в приложении по кнопке <b>«Мои заказы и статус»</b>!";
                     document.getElementById("orderSuccessSummary").innerHTML = summaryHtml;
                     document.getElementById("orderSuccessModal").style.display = "flex";
-                } else {
-                    alert("Произошла ошибка при отправке. Пожалуйста, свяжитесь с менеджером по тел. +7(996)-636-45-66");
                 }
             })
-            .catch(function() {
+            .catch(function(error) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = "✓ Подтвердить заказ";
-                alert("Не удалось соединиться с сервером. Вы можете позвонить менеджеру Матвею: +7(996)-636-45-66");
+                if (!ForestFairAuth.isSignedIn()) setAuthUi(null);
+                alert(error.message || "Не удалось отправить заказ. Попробуйте войти снова или свяжитесь с менеджером.");
             });
+        }
+
+
+        function openAuthModal() {
+            var signed = ForestFairAuth.isSignedIn();
+            document.getElementById("authModalMessage").textContent = signed ? "Вы вошли в аккаунт Forest Fair. Сессия активна в этой вкладке." : "Для входа через Telegram откройте витрину внутри Telegram. Другие способы входа появятся следующим этапом.";
+            document.getElementById("telegramLoginBtn").style.display = signed ? "none" : "block";
+            document.getElementById("authLogoutBtn").style.display = signed ? "block" : "none";
+            document.getElementById("authModal").style.display = "flex";
+        }
+        function closeAuthModal() { document.getElementById("authModal").style.display = "none"; }
+        function setAuthUi(user) {
+            document.getElementById("authOpenBtnLabel").textContent = user ? "Мой аккаунт" : "Войти / Мой аккаунт";
+            document.getElementById("authStatusLine").textContent = user ? "✓ Вы вошли в Forest Fair" : "";
+        }
+        async function loginWithTelegram() {
+            var b=document.getElementById("telegramLoginBtn"), m=document.getElementById("authModalMessage");
+            b.disabled=true; m.textContent="Подтверждаем вход на сервере.";
+            try {
+                var user=await ForestFairAuth.loginTelegram(); setAuthUi(user);
+                m.textContent="✓ Вход выполнен."; b.style.display="none";
+                document.getElementById("authLogoutBtn").style.display="block";
+                if(window.ffPendingCheckout){window.ffPendingCheckout=false;closeAuthModal();openCheckoutModal();}
+            } catch(e){m.textContent=e.message||"Не удалось выполнить вход.";}
+            finally{b.disabled=false;}
+        }
+        async function logoutForestFair() {
+            try { await ForestFairAuth.logout(); setAuthUi(null); openAuthModal(); }
+            catch(e){document.getElementById("authModalMessage").textContent=e.message||"Ошибка выхода.";}
+        }
+        async function restoreAuthState() {
+            if(!ForestFairAuth.isSignedIn()){setAuthUi(null);return;}
+            try{var user=await ForestFairAuth.me();setAuthUi(user);}catch(_){setAuthUi(null);}
         }
 
         updateMyOrdersButtonBadge();
         renderCatalog();
+        restoreAuthState();
     </script>
 </body>
 </html>
