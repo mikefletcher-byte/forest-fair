@@ -33,12 +33,15 @@ def list_orders_for_user(orders: dict, user_id: int, limit: int = 15) -> list[di
     if not isinstance(orders, dict):
         return []
     owner_id = str(int(user_id))
+    max_items = max(0, int(limit))
+    if max_items == 0:
+        return []
     visible = []
     for record in reversed(list(orders.values())):
         if not isinstance(record, dict):
             continue
         if str(record.get("user_id", "")) == owner_id:
             visible.append(record)
-            if len(visible) >= max(0, int(limit)):
+            if len(visible) >= max_items:
                 break
     return visible
