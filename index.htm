@@ -1095,11 +1095,11 @@
                         <span class="contact-sub">vk.com/forestfair70 • Товары и статьи</span>
                     </div>
                 </a>
-                <a href="https://t.me/ForestFair70_bot" target="_blank" rel="noopener" class="contact-card-link" style="grid-column: 1 / -1;">
+                <a href="https://t.me/ForestFairTomsk_bot" target="_blank" rel="noopener" class="contact-card-link" style="grid-column: 1 / -1;">
                     <span style="font-size: 20px;">🤖</span>
                     <div>
                         Онлайн-консультант 24/7 в Telegram
-                        <span class="contact-sub">@ForestFair70_bot • Подбор продукции и заказ</span>
+                        <span class="contact-sub">@ForestFairTomsk_bot • Подбор продукции и заказ</span>
                     </div>
                 </a>
             </div>
@@ -1993,6 +1993,12 @@
         }
         async function loginWithTelegram() {
             var b=document.getElementById("telegramLoginBtn"), m=document.getElementById("authModalMessage");
+            var tgWebApp = window.Telegram && window.Telegram.WebApp;
+            if (!tgWebApp || !tgWebApp.initData) {
+                m.textContent="Открываем чат с ботом. В Telegram нажмите «🛒 Открыть Магазин», затем повторите вход в витрине.";
+                window.location.href="https://t.me/ForestFairTomsk_bot?start=shop";
+                return;
+            }
             b.disabled=true; m.textContent="Подтверждаем вход на сервере.";
             try {
                 var user=await ForestFairAuth.loginTelegram(); setAuthUi(user);
