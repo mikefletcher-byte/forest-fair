@@ -25,6 +25,7 @@ import aiohttp
 from aiohttp import web
 
 from auth_store import AuthStore, InactiveUser
+from auth_api import get_bearer_session
 from telegram_auth import TelegramInitDataError, verify_telegram_init_data
 
 
@@ -1395,6 +1396,33 @@ async def handle_telegram_auth(request: web.Request):
         )
 
 
+async def handle_auth_me(request: web.Request):
+    """Return the account associated with the presented active session."""
+    auth_store: AuthStore = request.app["auth_store"]
+    session = get_bearer_session(
+        auth_store, request.headers.get("Authorization")
+    )
+    if not session:
+        return web.json_response(
+            {"ok": False, "error": "unauthorized"},
+            status=401,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    return web.json_response(
+        {
+            "ok": True,
+            "user": {"user_id": session["user_id"]},
+            "session": {
+                "id": session["session_id"],
+                "created_at": session["created_at"],
+                "expires_at": session["expires_at"],
+                "device_label": session["device_label"],
+            },
+        },
+        headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+    )
+
+
 async def handle_options(request: web.Request):
     return web.Response(status=200, headers=CORS_HEADERS)
 
@@ -1472,6 +1500,8 @@ async def start_http_api(bot: Bot):
     app["auth_store"] = auth_store
     app.router.add_route("OPTIONS", "/api/auth/telegram", handle_options)
     app.router.add_post("/api/auth/telegram", handle_telegram_auth)
+    app.router.add_route("OPTIONS", "/api/auth/me", handle_options)
+    app.router.add_get("/api/auth/me", handle_auth_me)
     app.router.add_route("OPTIONS", "/api/order", handle_options)
     app.router.add_post("/api/order", handle_external_order)
     app.router.add_route("OPTIONS", "/api/orders", handle_options)
