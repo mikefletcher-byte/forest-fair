@@ -1430,13 +1430,13 @@ async def handle_external_order(request: web.Request):
         core_order_text = format_order_core_text(data, order_id=order_id)
 
         manager_notification = (
-            "🌐 <b>НОВЫЙ ЗАКАЗ #" + order_id + " ИЗ ПРИЛОЖЕНИЯ!</b> 🔥\\n\\n"
-            "👤 <b>Имя покупателя:</b> " + customer_name + "\\n"
-            "📲 <b>Источник:</b> " + source_label + "\\n"
+            "🌐 <b>НОВЫЙ ЗАКАЗ #" + order_id + " ИЗ ПРИЛОЖЕНИЯ!</b> 🔥\n\n"
+            "👤 <b>Имя покупателя:</b> " + customer_name + "\n"
+            "📲 <b>Источник:</b> " + source_label + "\n"
             "💡 <i>Добавить трек-номер:</i> <code>/track "
             + order_id
-            + " ТРЕК</code>\\n"
-            "➖➖➖➖➖➖➖➖➖➖➖➖\\n" + core_order_text
+            + " ТРЕК</code>\n"
+            "➖➖➖➖➖➖➖➖➖➖➖➖\n" + core_order_text
         )
 
         kb = get_manager_order_kb(order_id, tg_user_id=None, full_name=customer_name)
@@ -1458,6 +1458,7 @@ async def handle_external_order(request: web.Request):
             status=500,
             headers={**CORS_HEADERS, "Cache-Control": "no-store"},
         )
+
 
 async def handle_get_orders(request: web.Request):
     auth_store: AuthStore = request.app["auth_store"]
@@ -1485,6 +1486,7 @@ async def handle_get_orders(request: web.Request):
             status=500,
             headers={**CORS_HEADERS, "Cache-Control": "no-store"},
         )
+
 
 async def start_http_api(bot: Bot):
     auth_store = AuthStore(AUTH_DB_FILE)
