@@ -1716,7 +1716,6 @@
         function openGramPicker(productId) {
             openPicker[productId] = true;
             renderCatalog();
-        restoreAuthState();
             var inp = document.getElementById("input_" + productId);
             if (inp) {
                 inp.focus();
@@ -2014,6 +2013,7 @@
 
         updateMyOrdersButtonBadge();
         renderCatalog();
+        restoreAuthState();
     </script>
 </body>
 </html>
