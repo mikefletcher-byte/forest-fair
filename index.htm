@@ -317,6 +317,9 @@
             color: #fff;
         }
 
+        .auth-btn { flex:1; background:linear-gradient(135deg,rgba(60,163,101,.2),rgba(36,112,66,.3)); color:#b4f6ca; border:1.5px solid #48bf76; padding:10px 12px; border-radius:14px; font-size:13px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
+        .auth-status { color:#98f5be; font-size:12px; text-align:center; margin:0 14px 8px; min-height:16px; }
+        .auth-provider-btn { width:100%; background:linear-gradient(135deg,#3ca365,#247042); color:#fff; border:1px solid #63d48f; padding:12px; border-radius:11px; font-size:14px; font-weight:800; cursor:pointer; margin:6px 0; }
         .catalog {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -1039,6 +1042,7 @@
 
         <!-- Верхняя панель: Установка приложения + Мои заказы (Статус) -->
         <div class="top-actions-bar">
+            <button id="authOpenBtn" class="auth-btn" onclick="openAuthModal()">👤 <span id="authOpenBtnLabel">Войти / Мой аккаунт</span></button>
             <button id="pwaInstallBtn" class="install-pwa-btn" onclick="installPWA()">
                 📲 <span>Установить приложение</span>
             </button>
@@ -1047,6 +1051,7 @@
             </button>
         </div>
 
+        <div id="authStatusLine" class="auth-status" aria-live="polite"></div>
         <!-- Каталог товаров -->
         <div id="catalogGrid" class="catalog"></div>
 
@@ -1127,6 +1132,7 @@
         <button class="checkout-btn" onclick="openCheckoutModal()">📦 Оформить заказ</button>
     </div>
 
+    <div id="authModal" class="modal-overlay" onclick="if(event.target===this) closeAuthModal()"><div class="modal-box"><div class="modal-title">👤 Аккаунт Forest Fair</div><div class="modal-subtitle">Войдите, чтобы оформлять заказы и видеть историю</div><div id="authModalMessage" class="delivery-summary-box" aria-live="polite">Выберите способ входа.</div><button type="button" id="telegramLoginBtn" class="auth-provider-btn" onclick="loginWithTelegram()">✈️ Продолжить через Telegram</button><div class="modal-actions"><button type="button" class="modal-back-btn" style="width:100%;" onclick="closeAuthModal()">Закрыть</button><button type="button" id="authLogoutBtn" class="modal-back-btn" style="display:none;flex:1;" onclick="logoutForestFair()">Выйти</button></div></div></div>
     <!-- Модальное окно оформления заказа -->
     <div id="checkoutModal" class="modal-overlay">
         <div class="modal-box">
@@ -1242,6 +1248,8 @@
         </div>
     </div>
 
+    <script>
+        <script src="./auth-client.js"></script>
     <script>
         var API_BASE_URL = "https://89.22.228.22.nip.io";
         var API_ORDER_URL = API_BASE_URL + "/api/order";
@@ -1776,6 +1784,7 @@
         function openGramPicker(productId) {
             openPicker[productId] = true;
             renderCatalog();
+        restoreAuthState();
             var inp = document.getElementById("input_" + productId);
             if (inp) {
                 inp.focus();
@@ -1900,6 +1909,7 @@
         }
 
         function openCheckoutModal() {
+            if (!ForestFairAuth.isSignedIn()) { window.ffPendingCheckout = true; openAuthModal(); return; }
             document.getElementById("checkoutModal").style.display = "flex";
             updateModalSummary();
         }
@@ -2051,6 +2061,39 @@
                 submitBtn.textContent = "✓ Подтвердить заказ";
                 alert("Не удалось соединиться с сервером. Вы можете позвонить менеджеру Матвею: +7(996)-636-45-66");
             });
+        }
+
+
+        function openAuthModal() {
+            var signed = ForestFairAuth.isSignedIn();
+            document.getElementById("authModalMessage").textContent = signed ? "Вы вошли в аккаунт Forest Fair. Сессия активна в этой вкладке." : "Для входа через Telegram откройте витрину внутри Telegram. Другие способы входа появятся следующим этапом.";
+            document.getElementById("telegramLoginBtn").style.display = signed ? "none" : "block";
+            document.getElementById("authLogoutBtn").style.display = signed ? "block" : "none";
+            document.getElementById("authModal").style.display = "flex";
+        }
+        function closeAuthModal() { document.getElementById("authModal").style.display = "none"; }
+        function setAuthUi(user) {
+            document.getElementById("authOpenBtnLabel").textContent = user ? "Мой аккаунт" : "Войти / Мой аккаунт";
+            document.getElementById("authStatusLine").textContent = user ? "✓ Вы вошли в Forest Fair" : "";
+        }
+        async function loginWithTelegram() {
+            var b=document.getElementById("telegramLoginBtn"), m=document.getElementById("authModalMessage");
+            b.disabled=true; m.textContent="Подтверждаем вход на сервере.";
+            try {
+                var user=await ForestFairAuth.loginTelegram(); setAuthUi(user);
+                m.textContent="✓ Вход выполнен."; b.style.display="none";
+                document.getElementById("authLogoutBtn").style.display="block";
+                if(window.ffPendingCheckout){window.ffPendingCheckout=false;closeAuthModal();openCheckoutModal();}
+            } catch(e){m.textContent=e.message||"Не удалось выполнить вход.";}
+            finally{b.disabled=false;}
+        }
+        async function logoutForestFair() {
+            try { await ForestFairAuth.logout(); setAuthUi(null); openAuthModal(); }
+            catch(e){document.getElementById("authModalMessage").textContent=e.message||"Ошибка выхода.";}
+        }
+        async function restoreAuthState() {
+            if(!ForestFairAuth.isSignedIn()){setAuthUi(null);return;}
+            try{var user=await ForestFairAuth.me();setAuthUi(user);}catch(_){setAuthUi(null);}
         }
 
         updateMyOrdersButtonBadge();
