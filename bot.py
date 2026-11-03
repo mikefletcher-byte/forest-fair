@@ -24,6 +24,9 @@ from aiogram.types import (
 import aiohttp
 from aiohttp import web
 
+from auth_store import AuthStore, InactiveUser
+from telegram_auth import TelegramInitDataError, verify_telegram_init_data
+
 
 # =====================================================================
 # КОНФИГУРАЦИЯ И КЛЮЧИ
@@ -81,6 +84,7 @@ MANAGER_CHAT_ID_FILE = os.path.join(BASE_DIR, "manager_id.txt")
 ADMIN_CHAT_ID_FILE = os.path.join(BASE_DIR, "admin_id.txt")
 REMINDERS_FILE = os.path.join(BASE_DIR, "reminders.json")
 ORDERS_FILE = os.path.join(BASE_DIR, "orders.json")
+AUTH_DB_FILE = os.environ.get("FORESTFAIR_AUTH_DB", os.path.join(BASE_DIR, "auth.sqlite3"))
 
 FILE_LOCK = asyncio.Lock()
 
@@ -1321,10 +1325,74 @@ async def consultant_handler(message: Message, bot: Bot):
 # ВЕБ-ПРИЕМНИК ЗАКАЗОВ (HTTPS)
 # =====================================================================
 CORS_HEADERS = {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": WEBAPP_URL.rstrip("/"),
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Vary": "Origin",
 }
+
+
+async def handle_telegram_auth(request: web.Request):
+    """Authenticate a Telegram WebApp using Telegram-signed initData."""
+    if not TELEGRAM_TOKEN:
+        return web.json_response(
+            {"ok": False, "error": "telegram_auth_unavailable"},
+            status=503,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    try:
+        if request.content_length is not None and request.content_length > 16_384:
+            raise TelegramInitDataError("initData is too large")
+        payload = await request.json()
+        if not isinstance(payload, dict):
+            raise TelegramInitDataError("invalid request body")
+        init_data = payload.get("initData")
+        verified_user = verify_telegram_init_data(init_data, TELEGRAM_TOKEN)
+        telegram_id = int(verified_user["id"])
+        auth_store: AuthStore = request.app["auth_store"]
+        user_id, created = auth_store.get_or_create_user_for_identity(
+            "telegram", telegram_id
+        )
+        user_agent = request.headers.get("User-Agent", "")[:200] or None
+        session_id, session_token, expires_at = auth_store.create_session(
+            user_id, device_label=user_agent
+        )
+        return web.json_response(
+            {
+                "ok": True,
+                "token": session_token,
+                "expires_at": expires_at,
+                "user": {"user_id": user_id},
+                "account_created": created,
+                "session_id": session_id,
+            },
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    except TelegramInitDataError:
+        return web.json_response(
+            {"ok": False, "error": "telegram_auth_failed"},
+            status=401,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    except InactiveUser:
+        return web.json_response(
+            {"ok": False, "error": "account_unavailable"},
+            status=403,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return web.json_response(
+            {"ok": False, "error": "invalid_request"},
+            status=400,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    except Exception:
+        logging.exception("Ошибка Telegram-аутентификации")
+        return web.json_response(
+            {"ok": False, "error": "authentication_unavailable"},
+            status=500,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
 
 
 async def handle_options(request: web.Request):
@@ -1397,8 +1465,13 @@ async def handle_get_orders(request: web.Request):
 
 
 async def start_http_api(bot: Bot):
-    app = web.Application()
+    auth_store = AuthStore(AUTH_DB_FILE)
+    auth_store.initialize()
+    app = web.Application(client_max_size=16_384)
     app["bot"] = bot
+    app["auth_store"] = auth_store
+    app.router.add_route("OPTIONS", "/api/auth/telegram", handle_options)
+    app.router.add_post("/api/auth/telegram", handle_telegram_auth)
     app.router.add_route("OPTIONS", "/api/order", handle_options)
     app.router.add_post("/api/order", handle_external_order)
     app.router.add_route("OPTIONS", "/api/orders", handle_options)
