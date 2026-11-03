@@ -118,6 +118,7 @@
     loginTelegram,
     me,
     logout,
+    request,
     isSignedIn: () => Boolean(readToken())
   });
 })();
