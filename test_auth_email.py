@@ -53,9 +53,10 @@ class EmailCodeTests(unittest.TestCase):
 
     def test_wrong_code_counts_attempts_and_locks_after_limit(self):
         code = self.service.create_code("person@example.com")
-        self.assertFalse(self.service.verify_code("person@example.com", "000000" if code != "000000" else "000001"))
-        self.assertFalse(self.service.verify_code("person@example.com", "111111"))
-        self.assertFalse(self.service.verify_code("person@example.com", "222222"))
+        wrong_codes = ["000000", "111111", "222222", "333333"]
+        wrong_codes = [candidate for candidate in wrong_codes if candidate != code]
+        for candidate in wrong_codes[:3]:
+            self.assertFalse(self.service.verify_code("person@example.com", candidate))
         self.assertFalse(self.service.verify_code("person@example.com", code))
 
     def test_expired_code_is_rejected(self):
