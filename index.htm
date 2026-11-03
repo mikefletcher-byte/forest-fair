@@ -1222,8 +1222,7 @@
             <div class="modal-subtitle">Статус обновляется в реальном времени</div>
 
             <div style="display: flex; gap: 6px; margin-bottom: 12px;">
-                <input type="tel" id="searchOrdersPhone" class="form-input" placeholder="Поиск по вашему телефону...">
-                <button type="button" class="promo-btn" onclick="searchOrdersByPhone()">Найти</button>
+                <button type="button" class="promo-btn" onclick="loadMyOrdersFromServer()">Обновить мои заказы</button>
             </div>
 
             <div id="myOrdersList" style="max-height: 52vh; overflow-y: auto;"></div>
@@ -1250,10 +1249,6 @@
 
     <script src="./auth-client.js"></script>
     <script>
-        var API_BASE_URL = "https://89.22.228.22.nip.io";
-        var API_ORDER_URL = API_BASE_URL + "/api/order";
-        var API_ORDERS_GET_URL = API_BASE_URL + "/api/orders";
-
         var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
         if (tg) { tg.expand(); }
 
@@ -1361,61 +1356,22 @@
 
         function loadMyOrdersFromServer() {
             var container = document.getElementById("myOrdersList");
-            var ids = getSavedOrderIds();
-            var savedPhone = "";
-            try { savedPhone = localStorage.getItem("ff_last_phone") || ""; } catch (e) {}
-
-            if (savedPhone && !document.getElementById("searchOrdersPhone").value) {
-                document.getElementById("searchOrdersPhone").value = savedPhone;
-            }
-
-            if (ids.length === 0 && !savedPhone) {
+            if (!ForestFairAuth.isSignedIn()) {
                 renderOrdersListHtml([]);
+                openAuthModal();
                 return;
             }
 
-            container.innerHTML = '<div style="text-align:center; padding:18px; color:var(--accent-gold);">⏳ Загрузка актуального статуса...</div>';
-
-            var query = ids.length > 0
-                ? ("?ids=" + encodeURIComponent(ids.join(",")))
-                : ("?phone=" + encodeURIComponent(savedPhone));
-
-            fetch(API_ORDERS_GET_URL + query)
-                .then(function(r) { return r.json(); })
+            container.innerHTML = '<div style="text-align:center; padding:18px; color:var(--accent-gold);">⏳ Загружаем ваши заказы...</div>';
+            ForestFairAuth.request("/api/orders", { method: "GET" })
                 .then(function(data) {
-                    if (data && data.ok) {
-                        renderOrdersListHtml(data.orders);
-                    } else {
-                        renderOrdersListHtml([]);
-                    }
+                    renderOrdersListHtml(Array.isArray(data.orders) ? data.orders : []);
                 })
-                .catch(function() {
-                    container.innerHTML = '<div style="text-align:center; padding:16px; color:var(--danger);">Не удалось обновить статус. Проверьте интернет или позвоните менеджеру: +7(996)-636-45-66</div>';
-                });
-        }
-
-        function searchOrdersByPhone() {
-            var ph = document.getElementById("searchOrdersPhone").value.trim();
-            if (!ph) return;
-            try { localStorage.setItem("ff_last_phone", ph); } catch (e) {}
-
-            var container = document.getElementById("myOrdersList");
-            container.innerHTML = '<div style="text-align:center; padding:18px; color:var(--accent-gold);">🔍 Поиск заказов по номеру...</div>';
-
-            fetch(API_ORDERS_GET_URL + "?phone=" + encodeURIComponent(ph))
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (data && data.ok) {
-                        for (var i = 0; i < data.orders.length; i++) {
-                            saveOrderIdLocal(data.orders[i].order_id);
-                        }
-                        renderOrdersListHtml(data.orders);
-                    } else {
-                        renderOrdersListHtml([]);
-                    }
-                })
-                .catch(function() {
-                    renderOrdersListHtml([]);
+                .catch(function(error) {
+                    if (!ForestFairAuth.isSignedIn()) setAuthUi(null);
+                    container.innerHTML = '<div style="text-align:center; padding:16px; color:var(--danger);">' +
+                        (error.message || "Не удалось загрузить историю заказов. Попробуйте войти снова.") +
+                        '</div>';
                 });
         }
 
@@ -2013,32 +1969,21 @@
             try { localStorage.setItem("ff_last_phone", phone); } catch (e) {}
 
             var payload = JSON.stringify(orderObj);
-            var isInsideTelegram = tg && tg.platform && tg.platform !== 'unknown';
-
-            if (isInsideTelegram) {
-                tg.sendData(payload);
-                return;
-            }
-
             var submitBtn = document.getElementById("submitOrderBtn");
             submitBtn.disabled = true;
             submitBtn.textContent = "⏳ Отправка заказа...";
 
-            fetch(API_ORDER_URL, {
+            ForestFairAuth.request("/api/order", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 body: payload
             })
-            .then(function(res) { return res.json(); })
             .then(function(data) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = "✓ Подтвердить заказ";
 
                 if (data && data.ok) {
                     var ordId = (data.order && data.order.order_id) ? data.order.order_id : "";
-                    if (ordId) {
-                        saveOrderIdLocal(ordId);
-                    }
+                    if (ordId) saveOrderIdLocal(ordId);
 
                     closeCheckoutModal();
                     cartGrams = {};
@@ -2051,14 +1996,13 @@
                         "📦 Отслеживать статус сборки и трек-номер доставки вы можете прямо в приложении по кнопке <b>«Мои заказы и статус»</b>!";
                     document.getElementById("orderSuccessSummary").innerHTML = summaryHtml;
                     document.getElementById("orderSuccessModal").style.display = "flex";
-                } else {
-                    alert("Произошла ошибка при отправке. Пожалуйста, свяжитесь с менеджером по тел. +7(996)-636-45-66");
                 }
             })
-            .catch(function() {
+            .catch(function(error) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = "✓ Подтвердить заказ";
-                alert("Не удалось соединиться с сервером. Вы можете позвонить менеджеру Матвею: +7(996)-636-45-66");
+                if (!ForestFairAuth.isSignedIn()) setAuthUi(null);
+                alert(error.message || "Не удалось отправить заказ. Попробуйте войти снова или свяжитесь с менеджером.");
             });
         }
 
