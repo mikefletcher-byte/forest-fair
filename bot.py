@@ -1326,7 +1326,7 @@ async def consultant_handler(message: Message, bot: Bot):
 # ВЕБ-ПРИЕМНИК ЗАКАЗОВ (HTTPS)
 # =====================================================================
 CORS_HEADERS = {
-    "Access-Control-Allow-Origin": WEBAPP_URL.rstrip("/"),
+    "Access-Control-Allow-Origin": "https://mikefletcher-byte.github.io",
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Vary": "Origin",
