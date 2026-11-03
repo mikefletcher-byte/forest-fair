@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Forest Fair — Лесная Ярмарка</title>
+
+    <!-- Подтверждение прав Яндекс и Google -->
+    <meta name="yandex-verification" content="a72c6a7d58c89d84" />
+    <meta name="google-site-verification" content="BFJpRnXdhNdwrUyYGuYDVCnFTwRZ740txKKxIPNphGs" />
+
+    <!-- Базовые SEO теги для поиска Google и Яндекс -->
+    <meta name="description" content="Forest Fair — Сибирская таежная лавка в г. Томск. Отборные дикоросы, лесные сборы, мицелий Ежовика Гребенчатого, алтайские травы и премиальный чай (Габа, Пуэр) с доставкой по России.">
+    <meta name="keywords" content="Forest Fair, таежная лавка Томск, дикоросы Томск, ежовик гребенчатый, чай габа, пуэр, сибирские травы">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://mikefletcher-byte.github.io/forest-fair/">
+
+    <!-- Разметка Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Forest Fair — Сибирская таежная лавка (Томск)">
+    <meta property="og:description" content="Таежные дикоросы, мицелий ежовика, целебные лесные сборы и премиальные чаи из сердца Сибири.">
+    <meta property="og:url" content="https://mikefletcher-byte.github.io/forest-fair/">
+    <meta property="og:image" content="https://mikefletcher-byte.github.io/forest-fair/icon-512.png">
+
+    <!-- PWA Мета-теги, Манифест и Иконки -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111916">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Forest Fair">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <script src="https://telegram.org/js/telegram-web-app.js" async></script>
+    <style>
+        :root {
+            --bg-top: #111916;
+            --bg-mid: #1e1a17;
+            --bg-bot: #12211a;
+            --card-border: #6e5536;
+            --card-border-hover: #f5b942;
+            --accent-gold: #f5b942;
+            --accent-amber: #d97724;
+            --accent-green: #3ca365;
+            --text-main: #fcf8f2;
+            --text-muted: #d0c4b4;
+            --danger: #ff6b5e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(160deg, var(--bg-top) 0%, var(--bg-mid) 48%, var(--bg-bot) 100%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            padding-bottom: 130px;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 340px;
+            background: radial-gradient(ellipse 75% 65% at 50% 0%, rgba(217, 119, 36, 0.16) 0%, rgba(30, 58, 43, 0.25) 45%, transparent 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .app-container {
+            max-width: 720px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .forest-bg-decor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bg-branch-left {
+            position: absolute;
+            top: -10px;
+            left: -20px;
+            width: 180px;
+            opacity: 0.22;
+        }
+
+        .bg-branch-right {
+            position: absolute;
+            top: 40px;
+            right: -25px;
+            width: 170px;
+            opacity: 0.22;
+            transform: scaleX(-1);
+        }
+
+        .bg-deer {
+            position: absolute;
+            bottom: 140px;
+            left: -10px;
+            width: 160px;
+            opacity: 0.12;
+        }
+
+        .bg-fox {
+            position: absolute;
+            bottom: 80px;
+            right: 5px;
+            width: 120px;
+            opacity: 0.14;
+        }
+
+        .firefly {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle, #ffe57f 0%, rgba(245,185,66,0) 70%);
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: floatFirefly 8s infinite ease-in-out alternate;
+        }
+
+        @keyframes floatFirefly {
+            0% { transform: translateY(0px) translateX(0px) scale(0.8); opacity: 0.2; }
+            50% { opacity: 0.85; }
+            100% { transform: translateY(-60px) translateX(25px) scale(1.3); opacity: 0.3; }
+        }
+
+        .header {
+            background: transparent;
+            padding: 28px 16px 14px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::after {
+            content: "";
+            display: block;
+            width: 75%;
+            max-width: 420px;
+            height: 1px;
+            margin: 16px auto 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(245, 185, 66, 0.45) 50%, transparent 100%);
+        }
+
+        .brand-badge {
+            display: inline-block;
+            background: rgba(245, 185, 66, 0.14);
+            color: var(--accent-gold);
+            border: 1px solid rgba(245, 185, 66, 0.45);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            padding: 5px 14px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+            backdrop-filter: blur(6px);
+        }
+
+        .title-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 4px 0 8px;
+        }
+
+        .animated-title {
+            font-size: 38px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            font-family: Georgia, "Times New Roman", serif;
+            background: linear-gradient(90deg, #fff3d1 0%, #f5b942 35%, #ffdf85 50%, #e08e24 75%, #fff3d1 100%);
+            background-size: 200% auto;
+            color: #fff;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 4px 14px rgba(245, 185, 66, 0.38));
+            animation: shineTitle 4.5s linear infinite, floatTitle 3.5s ease-in-out infinite;
+        }
+
+        .title-leaf {
+            font-size: 24px;
+            animation: swayLeaf 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes shineTitle {
+            to { background-position: 200% center; }
+        }
+
+        @keyframes floatTitle {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-3px); }
+        }
+
+        @keyframes swayLeaf {
+            0% { transform: rotate(-10deg) scale(0.95); }
+            100% { transform: rotate(12deg) scale(1.08); }
+        }
+
+        .header p {
+            font-size: 13.5px;
+            color: var(--text-muted);
+            max-width: 340px;
+            margin: 0 auto;
+        }
+
+        .tabs-wrapper {
+            position: sticky;
+            top: 8px;
+            z-index: 25;
+            display: flex;
+            justify-content: center;
+            padding: 4px 14px;
+        }
+
+        .tabs {
+            display: inline-flex;
+            gap: 8px;
+            padding: 6px 8px;
+            overflow-x: auto;
+            max-width: 100%;
+            background: rgba(20, 26, 22, 0.82);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(245, 185, 66, 0.28);
+            border-radius: 30px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+        }
+
+        .tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+            padding: 7px 15px;
+            border-radius: 22px;
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #f5b942 0%, #d97724 100%);
+            color: #14110e;
+            border-color: #ffe08a;
+            box-shadow: 0 3px 12px rgba(245, 185, 66, 0.4);
+        }
+
+        .top-actions-bar {
+            margin: 10px 14px 4px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .install-pwa-btn, .my-orders-btn {
+            flex: 1;
+            background: linear-gradient(135deg, rgba(245, 185, 66, 0.18) 0%, rgba(217, 119, 36, 0.25) 100%);
+            color: var(--accent-gold);
+            border: 1.5px solid var(--accent-gold);
+            padding: 10px 12px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
+            transition: all 0.25s ease;
+        }
+
+        .my-orders-btn {
+            background: linear-gradient(135deg, rgba(60, 163, 101, 0.2) 0%, rgba(36, 112, 66, 0.3) 100%);
+            color: #98f5be;
+            border-color: #48bf76;
+        }
+
+        .install-pwa-btn:hover {
+            background: linear-gradient(135deg, #f5b942 0%, #d97724 100%);
+            color: #14110e;
+        }
+
+        .my-orders-btn:hover {
+            background: linear-gradient(135deg, #3ca365 0%, #247042 100%);
+            color: #fff;
+        }
+
+        .catalog {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            padding: 14px;
+        }
+
+        @media (max-width: 440px) {
+            .catalog {
+                grid-template-columns: 1fr;
+            }
+            .top-actions-bar {
+                flex-direction: column;
+            }
+        }
+
+        .card {
+            position: relative;
+            aspect-ratio: 1 / 1;
+            border: 2px solid var(--card-border);
+            border-radius: 20px;
+            overflow: hidden;
+            background: #16221b;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.75);
+            transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+                        box-shadow 0.3s ease,
+                        border-color 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--card-border-hover);
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.85),
+                        0 0 20px rgba(245, 185, 66, 0.3);
+        }
+
+        .card-bg-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: contrast(1.04) saturate(1.08);
+            transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 1;
+        }
+
+        .card:hover .card-bg-img {
+            transform: scale(1.07);
+        }
+
+        .card-gradient-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to top,
+                rgba(14, 18, 15, 0.95) 0%,
+                rgba(18, 24, 20, 0.65) 26%,
+                rgba(0, 0, 0, 0) 58%
+            );
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .card-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(20, 16, 13, 0.85);
+            backdrop-filter: blur(6px);
+            color: var(--accent-gold);
+            border: 1px solid rgba(245, 185, 66, 0.6);
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 12px;
+            z-index: 4;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.6);
+        }
+
+        .card-drawer {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 3;
+            padding: 14px 12px 12px;
+            background: linear-gradient(to top, rgba(16, 22, 18, 0.96) 0%, rgba(24, 32, 26, 0.88) 75%, transparent 100%);
+            transition: background 0.3s ease, backdrop-filter 0.3s ease;
+        }
+
+        .card:hover .card-drawer,
+        .card.editing .card-drawer,
+        .card.expanded .card-drawer {
+            background: rgba(17, 23, 19, 0.93);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(245, 185, 66, 0.35);
+        }
+
+        .drawer-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .title-block {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .card-title {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 16px;
+            font-weight: 900;
+            line-height: 1.2;
+            letter-spacing: 0.2px;
+            background: linear-gradient(90deg, #fff7e0 0%, #f7cb68 55%, #ffdf91 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.95));
+            margin-bottom: 3px;
+        }
+
+        .card-mini-price {
+            font-size: 12.5px;
+            font-weight: 800;
+            color: #e6d7c3;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+        }
+
+        .card-mini-price span {
+            color: var(--accent-gold);
+        }
+
+        .drawer-details {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+                        opacity 0.28s ease,
+                        margin-top 0.28s ease;
+        }
+
+        .card:hover .drawer-details,
+        .card.editing .drawer-details,
+        .card.expanded .drawer-details {
+            max-height: 250px;
+            opacity: 1;
+            margin-top: 9px;
+        }
+
+        .card-weight-info {
+            font-size: 11px;
+            color: var(--accent-gold);
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .card-desc {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            line-height: 1.35;
+        }
+
+        .add-btn {
+            background: linear-gradient(135deg, #3ca365 0%, #247042 100%);
+            color: #fff;
+            border: 1px solid #63d48f;
+            padding: 8px 11px;
+            border-radius: 11px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            flex-shrink: 0;
+        }
+
+        .gram-picker {
+            background: rgba(14, 20, 16, 0.96);
+            border: 1.5px solid var(--accent-gold);
+            border-radius: 12px;
+            padding: 8px;
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .gram-picker-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent-gold);
+            text-align: center;
+        }
+
+        .preset-row {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        .preset-chip {
+            background: #26221e;
+            color: var(--text-muted);
+            border: 1px solid #524230;
+            border-radius: 7px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .gram-input-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .gram-input {
+            width: 100%;
+            background: #1a1714;
+            color: #fff;
+            border: 1px solid #6e5536;
+            border-radius: 8px;
+            padding: 6px 8px;
+            font-size: 13px;
+            font-weight: 800;
+            text-align: center;
+            outline: none;
+        }
+
+        .gram-input.input-error {
+            border-color: var(--danger);
+            box-shadow: 0 0 8px rgba(255, 107, 94, 0.55);
+        }
+
+        .gram-unit {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .gram-calc-preview {
+            font-size: 11.5px;
+            color: #8ce8b1;
+            text-align: center;
+            font-weight: 800;
+        }
+
+        .gram-calc-preview.error-text {
+            color: var(--danger);
+        }
+
+        .gram-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .gram-done-btn {
+            flex: 1;
+            background: linear-gradient(135deg, #f5b942 0%, #d97724 100%);
+            color: #14110e;
+            border: none;
+            padding: 6px 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .gram-remove-btn {
+            background: rgba(224, 83, 71, 0.2);
+            color: #ff8b80;
+            border: 1px solid var(--danger);
+            padding: 6px 9px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .selected-badge-btn {
+            background: rgba(60, 163, 101, 0.25);
+            color: #98f5be;
+            border: 1.5px solid #48bf76;
+            padding: 7px 10px;
+            border-radius: 10px;
+            font-size: 11.5px;
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .promo-section {
+            margin: 8px 14px 14px;
+            background: linear-gradient(135deg, rgba(59, 43, 28, 0.78) 0%, rgba(25, 43, 33, 0.78) 100%);
+            backdrop-filter: blur(8px);
+            border: 1.5px dashed rgba(245, 185, 66, 0.75);
+            border-radius: 16px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+        }
+
+        .promo-text {
+            font-size: 12.5px;
+            color: var(--text-main);
+            line-height: 1.35;
+        }
+
+        .promo-text b {
+            color: var(--accent-gold);
+        }
+
+        .promo-btn {
+            background: rgba(245, 185, 66, 0.18);
+            color: var(--accent-gold);
+            border: 1px solid var(--accent-gold);
+            padding: 8px 13px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .promo-btn.applied {
+            background: var(--accent-green);
+            color: #fff;
+            border-color: #6ee79e;
+        }
+
+        /* Блок контактов и площадок */
+        .contacts-section {
+            margin: 4px 14px 14px;
+            background: rgba(18, 25, 21, 0.88);
+            border: 1.5px solid rgba(245, 185, 66, 0.4);
+            border-radius: 18px;
+            padding: 14px;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.45);
+        }
+
+        .contacts-title {
+            font-family: Georgia, serif;
+            font-size: 15px;
+            font-weight: 900;
+            color: var(--accent-gold);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .contacts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        @media (max-width: 440px) {
+            .contacts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .contact-card-link {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            background: rgba(34, 42, 36, 0.85);
+            border: 1px solid rgba(245, 185, 66, 0.3);
+            padding: 10px 12px;
+            border-radius: 12px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 12.5px;
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+
+        .contact-card-link:hover {
+            border-color: var(--accent-gold);
+            background: rgba(245, 185, 66, 0.14);
+            transform: translateY(-1px);
+        }
+
+        .contact-sub {
+            display: block;
+            font-size: 10.5px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .age-disclaimer {
+            margin: 4px 14px 16px;
+            background: rgba(22, 18, 16, 0.9);
+            border: 1.5px solid rgba(224, 83, 71, 0.55);
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+
+        .age-badge {
+            min-width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #e05347 0%, #9e2a20 100%);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ff9e96;
+        }
+
+        .age-text {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .age-text b {
+            color: #ffb3ad;
+        }
+
+        .app-footer {
+            text-align: center;
+            margin: 6px auto 35px;
+            padding: 0 16px;
+            font-size: 11.5px;
+            color: #a49685;
+            line-height: 1.6;
+        }
+
+        .footer-brand {
+            font-size: 11px;
+            color: #7d7265;
+            margin-bottom: 4px;
+        }
+
+        .footer-author a {
+            color: var(--accent-gold);
+            text-decoration: none;
+            font-weight: 700;
+            border-bottom: 1px dotted rgba(245, 185, 66, 0.5);
+        }
+
+        .footer-github {
+            margin-top: 4px;
+        }
+
+        .footer-github a {
+            color: #9c8e7e;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+        }
+
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(22, 20, 17, 0.96);
+            backdrop-filter: blur(12px);
+            border-top: 2px solid var(--card-border);
+            padding: 12px 16px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 30;
+            box-shadow: 0 -6px 25px rgba(0,0,0,0.75);
+        }
+
+        .cart-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cart-total-label {
+            font-size: 11.5px;
+            color: var(--text-muted);
+        }
+
+        .cart-total-price {
+            font-size: 19px;
+            font-weight: 900;
+            color: var(--accent-gold);
+        }
+
+        .checkout-btn {
+            background: linear-gradient(135deg, #f5b942 0%, #d97724 100%);
+            color: #14110e;
+            border: 1px solid #ffe399;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(245, 185, 66, 0.4);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 14, 12, 0.88);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+            overflow-y: auto;
+        }
+
+        .modal-box {
+            background: linear-gradient(155deg, #231f1b 0%, #15221b 100%);
+            border: 2px solid var(--accent-gold);
+            border-radius: 22px;
+            width: 100%;
+            max-width: 460px;
+            padding: 18px 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            max-height: 92vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-family: Georgia, serif;
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--accent-gold);
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .modal-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 11px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #e8dccb;
+            margin-bottom: 5px;
+        }
+
+        .radio-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .radio-btn {
+            background: #1a1815;
+            border: 1.5px solid #524230;
+            color: var(--text-muted);
+            padding: 9px 8px;
+            border-radius: 11px;
+            font-size: 12px;
+            font-weight: 800;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .radio-btn.active {
+            background: rgba(245, 185, 66, 0.18);
+            border-color: var(--accent-gold);
+            color: #fff;
+        }
+
+        .form-input {
+            width: 100%;
+            background: #161412;
+            border: 1px solid #6e5536;
+            color: #fff;
+            border-radius: 10px;
+            padding: 9px 11px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 8px;
+        }
+
+        .delivery-summary-box {
+            background: rgba(16, 26, 20, 0.9);
+            border: 1px dashed var(--accent-gold);
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin: 12px 0;
+            font-size: 12.5px;
+            line-height: 1.5;
+        }
+
+        .delivery-summary-box b {
+            color: var(--accent-gold);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .modal-back-btn {
+            background: #2b2622;
+            color: var(--text-muted);
+            border: 1px solid #524230;
+            padding: 11px 14px;
+            border-radius: 11px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .modal-submit-btn {
+            flex: 1;
+            background: linear-gradient(135deg, #3ca365 0%, #247042 100%);
+            color: #fff;
+            border: 1px solid #63d48f;
+            padding: 11px 16px;
+            border-radius: 11px;
+            font-size: 14px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .order-history-card {
+            background: rgba(16, 24, 19, 0.95);
+            border: 1px solid rgba(245, 185, 66, 0.45);
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 10px;
+            font-size: 12.5px;
+            line-height: 1.45;
+        }
+
+        .order-status-pill {
+            display: inline-block;
+            background: rgba(245, 185, 66, 0.16);
+            color: var(--accent-gold);
+            border: 1px solid rgba(245, 185, 66, 0.5);
+            padding: 4px 9px;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 11.5px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="forest-bg-decor">
+        <svg class="bg-branch-left" viewBox="0 0 200 200" fill="none">
+            <path d="M0 10 Q80 40 150 110" stroke="#4f7756" stroke-width="5" stroke-linecap="round"/>
+            <path d="M40 25 L80 10 M55 35 L100 25 M75 50 L120 45 M95 65 L140 65 M30 22 L45 65 M60 40 L75 85 M90 62 L105 105" stroke="#689c70" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="95" cy="70" r="8" fill="#8c5830"/>
+            <circle cx="52" cy="42" r="7" fill="#8c5830"/>
+        </svg>
+        <svg class="bg-branch-right" viewBox="0 0 200 200" fill="none">
+            <path d="M0 10 Q80 40 150 110" stroke="#4f7756" stroke-width="5" stroke-linecap="round"/>
+            <path d="M40 25 L80 10 M55 35 L100 25 M75 50 L120 45 M95 65 L140 65 M30 22 L45 65 M60 40 L75 85 M90 62 L105 105" stroke="#689c70" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <svg class="bg-deer" viewBox="0 0 160 160" fill="#a88b67">
+            <path d="M50 130 L55 95 L95 95 L102 130 L110 130 L103 90 L112 65 L125 60 L120 53 L110 56 L105 38 L120 22 L116 19 L104 32 L98 20 L94 22 L100 38 L95 58 L55 75 L42 68 L38 73 L48 85 L42 130 Z"/>
+        </svg>
+        <svg class="bg-fox" viewBox="0 0 140 140" fill="#d97724">
+            <path d="M35 110 Q20 95 30 75 Q45 70 55 85 L75 70 L82 48 L92 58 L104 46 L108 65 L122 72 L106 82 L95 110 Z"/>
+        </svg>
+        <div class="firefly" style="top: 18%; left: 12%; animation-delay: 0s;"></div>
+        <div class="firefly" style="top: 35%; left: 85%; animation-delay: 1.5s;"></div>
+        <div class="firefly" style="top: 58%; left: 20%; animation-delay: 3s;"></div>
+        <div class="firefly" style="top: 75%; left: 78%; animation-delay: 0.8s;"></div>
+        <div class="firefly" style="top: 88%; left: 45%; animation-delay: 2.2s;"></div>
+    </div>
+
+    <div class="app-container">
+        <div class="header">
+            <div class="brand-badge">🌲 Сибирская таежная лавка • Томск 🦌</div>
+            <div class="title-wrapper">
+                <span class="title-leaf">🌿</span>
+                <h1 class="animated-title">Forest Fair</h1>
+                <span class="title-leaf">🍄</span>
+            </div>
+            <p>Дикоросы, целебные грибы и премиальные чаи с расчетом по граммам</p>
+        </div>
+
+        <!-- Табы категорий -->
+        <div class="tabs-wrapper">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="filterCategory('all', this)">🌿 Все дары</button>
+                <button class="tab-btn" onclick="filterCategory('mushrooms', this)">🍄 Грибы</button>
+                <button class="tab-btn" onclick="filterCategory('tea', this)">🍵 Чаи</button>
+                <button class="tab-btn" onclick="filterCategory('herbs', this)">🌾 Ежовик и Сборы</button>
+            </div>
+        </div>
+
+        <!-- Верхняя панель: Установка приложения + Мои заказы (Статус) -->
+        <div class="top-actions-bar">
+            <button id="pwaInstallBtn" class="install-pwa-btn" onclick="installPWA()">
+                📲 <span>Установить приложение</span>
+            </button>
+            <button id="myOrdersBtn" class="my-orders-btn" onclick="openMyOrdersModal()">
+                📦 <span id="myOrdersBtnLabel">Мои заказы и статус</span>
+            </button>
+        </div>
+
+        <!-- Каталог товаров -->
+        <div id="catalogGrid" class="catalog"></div>
+
+        <!-- Плашка промокода -->
+        <div class="promo-section">
+            <div class="promo-text">
+                🎁 Промокод <b>FOREST10</b> дает скидку <b>10%</b> на любую продукцию!
+            </div>
+            <button id="promoBtn" class="promo-btn" onclick="togglePromo()">Применить</button>
+        </div>
+
+        <!-- Блок контактов и площадок -->
+        <div class="contacts-section">
+            <div class="contacts-title">🌲 Контакты и наши площадки</div>
+            <div class="contacts-grid">
+                <a href="tel:+79966364566" class="contact-card-link">
+                    <span style="font-size: 20px;">📞</span>
+                    <div>
+                        Позвонить менеджеру
+                        <span class="contact-sub">Матвей: +7 (996) 636-45-66</span>
+                    </div>
+                </a>
+                <a href="https://t.me/MBarukh" target="_blank" rel="noopener" class="contact-card-link">
+                    <span style="font-size: 20px;">💬</span>
+                    <div>
+                        Личка менеджера в ТГ
+                        <span class="contact-sub">@MBarukh • Заказы и вопросы</span>
+                    </div>
+                </a>
+                <a href="https://t.me/ForestFair70" target="_blank" rel="noopener" class="contact-card-link">
+                    <span style="font-size: 20px;">🌲</span>
+                    <div>
+                        Сообщество в Telegram
+                        <span class="contact-sub">@ForestFair70 • Отзывы и блог</span>
+                    </div>
+                </a>
+                <a href="https://vk.com/forestfair70" target="_blank" rel="noopener" class="contact-card-link">
+                    <span style="font-size: 20px;">💙</span>
+                    <div>
+                        Группа ВКонтакте
+                        <span class="contact-sub">vk.com/forestfair70 • Товары и статьи</span>
+                    </div>
+                </a>
+                <a href="https://t.me/ForestFair70_bot" target="_blank" rel="noopener" class="contact-card-link" style="grid-column: 1 / -1;">
+                    <span style="font-size: 20px;">🤖</span>
+                    <div>
+                        Онлайн-консультант 24/7 в Telegram
+                        <span class="contact-sub">@ForestFair70_bot • Подбор продукции и заказ</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Дисклеймер 18+ -->
+        <div class="age-disclaimer">
+            <div class="age-badge">18+</div>
+            <div class="age-text">
+                <b>Строго 18+. Только для совершеннолетних.</b><br>
+                Продукция нашей лавки является натуральным природным сырьем и пищевой добавкой. Не является лекарственным средством или БАД. Перед применением проконсультируйтесь со специалистом.
+            </div>
+        </div>
+
+        <!-- Авторская подпись -->
+        <footer class="app-footer">
+            <div class="footer-brand">🌲 «Forest Fair — Лесная Ярмарка» • г. Томск</div>
+            <div class="footer-author">
+                💻 Автор Digital-архитектуры проекта: 
+                <a href="https://t.me/DJonWeaK" target="_blank" rel="noopener">@DJonWeaK</a>
+            </div>
+        </footer>
+    </div>
+
+    <div id="bottomBar" class="bottom-bar">
+        <div class="cart-info">
+            <span id="cartCountLabel" class="cart-total-label">Позиций: 0</span>
+            <span id="cartTotalPrice" class="cart-total-price">0 ₽</span>
+        </div>
+        <button class="checkout-btn" onclick="openCheckoutModal()">📦 Оформить заказ</button>
+    </div>
+
+    <!-- Модальное окно оформления заказа -->
+    <div id="checkoutModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title">📦 Оформление заказа</div>
+            <div class="modal-subtitle">Доставка 500 ₽ • При заказе от 5 000 ₽ — БЕСПЛАТНО!</div>
+
+            <div class="form-group">
+                <span class="form-label">Ваше имя:</span>
+                <input type="text" id="orderName" class="form-input" placeholder="Как к вам обращаться?">
+            </div>
+
+            <div class="form-group">
+                <span class="form-label">Способ получения:</span>
+                <div class="radio-row">
+                    <div id="delivCourier" class="radio-btn active" onclick="setDeliveryMethod('courier')">🚚 Курьер / Доставка</div>
+                    <div id="delivPickup" class="radio-btn" onclick="setDeliveryMethod('pickup')">🌲 Самовывоз (Томск)</div>
+                </div>
+            </div>
+
+            <div id="addressFieldsBlock">
+                <div class="form-group">
+                    <span class="form-label">Город / Населенный пункт:</span>
+                    <input type="text" id="orderCity" class="form-input" placeholder="Например: Томск">
+                </div>
+                <div class="form-group form-row-2">
+                    <div>
+                        <span class="form-label">Улица:</span>
+                        <input type="text" id="orderStreet" class="form-input" placeholder="Улица">
+                    </div>
+                    <div>
+                        <span class="form-label">Дом / кв.:</span>
+                        <input type="text" id="orderHouse" class="form-input" placeholder="Дом, кв.">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <span class="form-label">Контактный телефон *:</span>
+                <input type="tel" id="orderPhone" class="form-input" placeholder="+7 (999) 000-00-00">
+            </div>
+
+            <div class="form-group">
+                <span class="form-label">Как вам удобно оплатить:</span>
+                <div class="radio-row">
+                    <div id="payTransfer" class="radio-btn active" onclick="setPaymentMethod('Переводом')">💳 Переводом</div>
+                    <div id="payCash" class="radio-btn" onclick="setPaymentMethod('Наличными')">💵 Наличными</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <span class="form-label">Комментарий к заказу (необязательно):</span>
+                <input type="text" id="orderComment" class="form-input" placeholder="Пожелания, удобное время, СДЭК/Почта...">
+            </div>
+
+            <div id="modalSummaryBox" class="delivery-summary-box"></div>
+
+            <div class="modal-actions">
+                <button type="button" class="modal-back-btn" onclick="closeCheckoutModal()">← Назад</button>
+                <button type="button" id="submitOrderBtn" class="modal-submit-btn" onclick="submitFinalOrder()">✓ Подтвердить заказ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Окно успешного заказа -->
+    <div id="orderSuccessModal" class="modal-overlay" onclick="if(event.target===this) closeSuccessModal()">
+        <div class="modal-box">
+            <div class="modal-title" style="color: #63d48f;">✅ Заказ успешно принят!</div>
+            <div id="orderSuccessSummary" style="font-size: 13px; color: var(--text-main); line-height: 1.5; margin: 10px 0; background: rgba(16,26,20,0.9); padding: 12px; border-radius: 12px; border: 1px solid rgba(99,212,143,0.4);"></div>
+            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.45; margin-bottom: 14px; background: rgba(245,185,66,0.08); padding: 10px; border-radius: 10px; border: 1px dashed rgba(245,185,66,0.4);">
+                <b style="color: var(--accent-gold);">📖 Краткая памятка Forest Fair:</b><br>
+                • <b>Колпаки и шляпки:</b> запивать теплой водой до 40°C (не кипятком!).<br>
+                • <b>Мицелий Ежовика:</b> 1 ч.л. (3–5 г) за 20 мин до еды.<br>
+                • <b>Чай Габба:</b> 85–90°C, 5–7 г на чайник (до 6–8 проливов).<br>
+                • <b>Пуэр:</b> 95–98°C, первую заварку слить через 5 сек.
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="modal-back-btn" style="flex: 1;" onclick="closeSuccessModal(); openMyOrdersModal();">📦 Статус заказа</button>
+                <button type="button" class="modal-submit-btn" style="flex: 1;" onclick="closeSuccessModal()">🌲 Отлично!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно отслеживания своих заказов -->
+    <div id="myOrdersModal" class="modal-overlay" onclick="if(event.target===this) closeMyOrdersModal()">
+        <div class="modal-box">
+            <div class="modal-title">📦 Мои заказы и статус</div>
+            <div class="modal-subtitle">Статус обновляется в реальном времени</div>
+
+            <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+                <input type="tel" id="searchOrdersPhone" class="form-input" placeholder="Поиск по вашему телефону...">
+                <button type="button" class="promo-btn" onclick="searchOrdersByPhone()">Найти</button>
+            </div>
+
+            <div id="myOrdersList" style="max-height: 52vh; overflow-y: auto;"></div>
+
+            <div class="modal-actions">
+                <button type="button" class="modal-back-btn" style="width: 100%;" onclick="closeMyOrdersModal()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно установки PWA -->
+    <div id="pwaModal" class="modal-overlay" onclick="if(event.target===this) closePwaModal()">
+        <div class="modal-box" style="text-align: center;">
+            <div class="modal-title">📲 Установка Forest Fair</div>
+            <div id="pwaModalText" style="font-size: 13.5px; color: var(--text-main); line-height: 1.5; margin: 12px 0 18px;"></div>
+            <div id="pwaOpenBrowserWrap" style="margin-bottom: 10px; display: none;">
+                <button type="button" class="modal-submit-btn" style="width: 100%;" onclick="openExternalBrowser()">
+                    🌐 Открыть в браузере (Chrome / Safari)
+                </button>
+            </div>
+            <button type="button" class="modal-back-btn" style="width: 100%;" onclick="closePwaModal()">Понятно</button>
+        </div>
+    </div>
+
+    <script>
+        var API_BASE_URL = "https://89.22.228.22.nip.io";
+        var API_ORDER_URL = API_BASE_URL + "/api/order";
+        var API_ORDERS_GET_URL = API_BASE_URL + "/api/orders";
+
+        var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+        if (tg) { tg.expand(); }
+
+        var deferredPrompt = null;
+        var pwaBtn = document.getElementById('pwaInstallBtn');
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./sw.js').catch(function(err) {
+                    console.warn('SW error:', err);
+                });
+            });
+        }
+
+        var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        if (isStandalone && pwaBtn) {
+            pwaBtn.style.display = 'none';
+        }
+
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (pwaBtn && !isStandalone) {
+                pwaBtn.style.display = 'flex';
+            }
+        });
+
+        function getSavedOrderIds() {
+            try {
+                var raw = localStorage.getItem("ff_order_ids");
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveOrderIdLocal(orderId) {
+            try {
+                var list = getSavedOrderIds();
+                if (list.indexOf(orderId) === -1) {
+                    list.push(orderId);
+                    localStorage.setItem("ff_order_ids", JSON.stringify(list));
+                }
+                updateMyOrdersButtonBadge();
+            } catch (e) {}
+        }
+
+        function updateMyOrdersButtonBadge() {
+            var list = getSavedOrderIds();
+            var lbl = document.getElementById("myOrdersBtnLabel");
+            if (lbl) {
+                lbl.textContent = list.length > 0 ? ("Мои заказы (" + list.length + ")") : "Мои заказы и статус";
+            }
+        }
+
+        function openMyOrdersModal() {
+            document.getElementById("myOrdersModal").style.display = "flex";
+            loadMyOrdersFromServer();
+        }
+
+        function closeMyOrdersModal() {
+            document.getElementById("myOrdersModal").style.display = "none";
+        }
+
+        function renderOrdersListHtml(orders) {
+            var container = document.getElementById("myOrdersList");
+            if (!orders || orders.length === 0) {
+                container.innerHTML =
+                    '<div style="text-align:center; color: var(--text-muted); padding: 20px 10px; font-size: 13px;">' +
+                    'У вас пока нет сохраненных заказов на этом устройстве.<br><br>' +
+                    'Если вы оформляли заказ ранее — введите ваш номер телефона в поле выше и нажмите <b>«Найти»</b>!' +
+                    '</div>';
+                return;
+            }
+
+            var html = "";
+            for (var i = 0; i < orders.length; i++) {
+                var o = orders[i];
+                var itemsLines = [];
+                var items = o.items || [];
+                for (var j = 0; j < items.length; j++) {
+                    itemsLines.push("• " + items[j].title + " (" + items[j].grams + " г)");
+                }
+                var trackHtml = o.track_number
+                    ? ('<div style="margin-top:5px; color:#8ce8b1;">🚚 <b>Трек-номер:</b> <code>' + o.track_number + '</code></div>')
+                    : '';
+
+                html +=
+                    '<div class="order-history-card">' +
+                        '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+                            '<b style="color:var(--accent-gold); font-size:14px;">Заказ #' + o.order_id + '</b>' +
+                            '<span style="font-size:11px; color:var(--text-muted);">' + (o.created_at || '') + '</span>' +
+                        '</div>' +
+                        '<div class="order-status-pill">' + (o.status_text || '🟡 Принят') + '</div>' +
+                        trackHtml +
+                        '<div style="margin-top:6px; color:#e6d7c3;">' + itemsLines.join("<br>") + '</div>' +
+                        '<div style="margin-top:6px; border-top:1px solid rgba(255,255,255,0.08); padding-top:5px; display:flex; justify-content:space-between;">' +
+                            '<span style="color:var(--text-muted);">' + (o.delivery_method || '') + '</span>' +
+                            '<b style="color:var(--accent-gold);">Итого: ' + Number(o.total || 0).toLocaleString("ru-RU") + ' ₽</b>' +
+                        '</div>' +
+                    '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function loadMyOrdersFromServer() {
+            var container = document.getElementById("myOrdersList");
+            var ids = getSavedOrderIds();
+            var savedPhone = "";
+            try { savedPhone = localStorage.getItem("ff_last_phone") || ""; } catch (e) {}
+
+            if (savedPhone && !document.getElementById("searchOrdersPhone").value) {
+                document.getElementById("searchOrdersPhone").value = savedPhone;
+            }
+
+            if (ids.length === 0 && !savedPhone) {
+                renderOrdersListHtml([]);
+                return;
+            }
+
+            container.innerHTML = '<div style="text-align:center; padding:18px; color:var(--accent-gold);">⏳ Загрузка актуального статуса...</div>';
+
+            var query = ids.length > 0
+                ? ("?ids=" + encodeURIComponent(ids.join(",")))
+                : ("?phone=" + encodeURIComponent(savedPhone));
+
+            fetch(API_ORDERS_GET_URL + query)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data && data.ok) {
+                        renderOrdersListHtml(data.orders);
+                    } else {
+                        renderOrdersListHtml([]);
+                    }
+                })
+                .catch(function() {
+                    container.innerHTML = '<div style="text-align:center; padding:16px; color:var(--danger);">Не удалось обновить статус. Проверьте интернет или позвоните менеджеру: +7(996)-636-45-66</div>';
+                });
+        }
+
+        function searchOrdersByPhone() {
+            var ph = document.getElementById("searchOrdersPhone").value.trim();
+            if (!ph) return;
+            try { localStorage.setItem("ff_last_phone", ph); } catch (e) {}
+
+            var container = document.getElementById("myOrdersList");
+            container.innerHTML = '<div style="text-align:center; padding:18px; color:var(--accent-gold);">🔍 Поиск заказов по номеру...</div>';
+
+            fetch(API_ORDERS_GET_URL + "?phone=" + encodeURIComponent(ph))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data && data.ok) {
+                        for (var i = 0; i < data.orders.length; i++) {
+                            saveOrderIdLocal(data.orders[i].order_id);
+                        }
+                        renderOrdersListHtml(data.orders);
+                    } else {
+                        renderOrdersListHtml([]);
+                    }
+                })
+                .catch(function() {
+                    renderOrdersListHtml([]);
+                });
+        }
+
+        function closePwaModal() {
+            document.getElementById('pwaModal').style.display = 'none';
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('orderSuccessModal').style.display = 'none';
+        }
+
+        function openExternalBrowser() {
+            var url = "https://mikefletcher-byte.github.io/forest-fair/";
+            if (tg && tg.openLink) {
+                tg.openLink(url);
+            } else {
+                window.open(url, '_blank');
+            }
+        }
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(function() {
+                    deferredPrompt = null;
+                });
+                return;
+            }
+
+            var isInsideTelegram = tg && tg.platform && tg.platform !== 'unknown';
+            var modal = document.getElementById('pwaModal');
+            var textEl = document.getElementById('pwaModalText');
+            var browserBtnWrap = document.getElementById('pwaOpenBrowserWrap');
+            var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+            if (isInsideTelegram) {
+                browserBtnWrap.style.display = 'block';
+                textEl.innerHTML = 
+                    "Чтобы иконка на рабочем столе открывала <b>сразу витрину магазина</b> (мимо чата):<br><br>" +
+                    "1. Нажмите зеленую кнопку ниже — витрина откроется в вашем браузере.<br>" +
+                    "2. Нажмите в ней <b>«📲 Установить приложение»</b> — и на экране появится прямая иконка магазина!";
+            } else if (isIOS) {
+                browserBtnWrap.style.display = 'none';
+                textEl.innerHTML = 
+                    "Чтобы установить магазин на экран <b>iPhone / iPad</b>:<br><br>" +
+                    "1. Нажмите иконку <b>«Поделиться»</b> (квадрат со стрелкой внизу Safari).<br>" +
+                    "2. Выберите <b>«На экран „Домой“» 📲</b> — иконка будет сразу открывать витрину!";
+            } else {
+                browserBtnWrap.style.display = 'none';
+                textEl.innerHTML = 
+                    "Чтобы установить <b>Forest Fair</b> (в том числе повторно после удаления):<br><br>" +
+                    "Откройте меню браузера <b>⋮</b> (три точки в правом верхнем углу) и нажмите <b>«📲 Установить приложение»</b> (или «Добавить на главный экран»).";
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        var promoApplied = false;
+        var currentCategory = 'all';
+        var cartGrams = {};
+        var openPicker = {};
+        var selectedDeliveryMethod = 'courier';
+        var selectedPaymentMethod = 'Переводом';
+
+        var products = [
+            {
+                id: "red_cap",
+                title: "Красный Мухомор (колпак 1-й сорт)",
+                baseGrams: 50,
+                basePrice: 1250,
+                minGrams: 50,
+                presets: [50, 100, 250],
+                category: "mushrooms",
+                badge: "🔥 1-й сорт",
+                desc: "Отборные плотные шляпки-колпаки 1-го сорта. Глубокий сон, снятие тревожности и мягкий вечерний курс.",
+                img: "red_cap.jpg"
+            },
+            {
+                id: "red_cap_2",
+                title: "Красный Мухомор (Колпак 2-й сорт)",
+                baseGrams: 50,
+                basePrice: 1000,
+                minGrams: 50,
+                presets: [50, 100, 250],
+                category: "mushrooms",
+                badge: "💰 Выгодно",
+                desc: "Шляпки 2-го сорта с полным сохранением природных свойств. Отличный выбор для регулярного курса.",
+                img: "red_cap_2.jpg"
+            },
+            {
+                id: "panther_extra",
+                title: "Пантерный Мухомор (Колпак 1-й сорт)",
+                baseGrams: 50,
+                basePrice: 4000,
+                minGrams: 50,
+                presets: [50, 100, 200],
+                category: "mushrooms",
+                badge: "👑 Элита",
+                desc: "Отборные молодые шляпки-колпаки 1-го сорта. Максимальная концентрация активных веществ для ценителей.",
+                img: "panther_extra.jpg"
+            },
+            {
+                id: "panther_cap_2",
+                title: "Пантерный Мухомор (Колпак 2-й сорт)",
+                baseGrams: 50,
+                basePrice: 3750,
+                minGrams: 50,
+                presets: [50, 100, 200],
+                category: "mushrooms",
+                badge: "⚡ Колпак 2-й с.",
+                desc: "Крепкие колпаки 2-го сорта. Высокая природная активность и глубокая проработка тонуса.",
+                img: "panther_cap_2.jpg"
+            },
+            {
+                id: "panther_1",
+                title: "Пантерный Мухомор (шляпки 1-й сорт)",
+                baseGrams: 50,
+                basePrice: 3500,
+                minGrams: 50,
+                presets: [50, 100, 200],
+                category: "mushrooms",
+                badge: "🍄 1-й сорт",
+                desc: "Цельные раскрытые шляпки 1-го сорта бережной низкотемпературной сушки из сибирской тайги.",
+                img: "panther_1.jpg"
+            },
+            {
+                id: "panther_second",
+                title: "Пантерный Мухомор (шляпки 2-й сорт)",
+                baseGrams: 50,
+                basePrice: 3000,
+                minGrams: 50,
+                presets: [50, 100, 200],
+                category: "mushrooms",
+                badge: "🌲 Доступно",
+                desc: "Высокая природная активность. Допускаются легкие изломы шляпок без потери силы.",
+                img: "panther_second.jpg"
+            },
+            {
+                id: "chanterelle_1",
+                title: "Лисичка свежая (1-й сорт)",
+                baseGrams: 1000,
+                basePrice: 4200,
+                minGrams: 1000,
+                presets: [1000, 2000, 5000],
+                category: "mushrooms",
+                badge: "🧡 Свежий сбор",
+                desc: "Отборная крупная таежная лисичка 1-го сорта. Природный источник полисахаридов и чистоты организма.",
+                img: "chanterelle_1.jpg"
+            },
+            {
+                id: "chanterelle_2",
+                title: "Лисичка свежая (2-й сорт)",
+                baseGrams: 1000,
+                basePrice: 3800,
+                minGrams: 1000,
+                presets: [1000, 2000, 5000],
+                category: "mushrooms",
+                badge: "🍄 Таежная",
+                desc: "Свежая сибирская лисичка 2-го сорта. Натуральный лесной дар по выгодной цене за килограмм.",
+                img: "chanterelle_2.jpg"
+            },
+            {
+                id: "gaba_tea",
+                title: "Габба Рубиновая",
+                baseGrams: 50,
+                basePrice: 1000,
+                minGrams: 50,
+                presets: [50, 100, 200],
+                category: "tea",
+                badge: "🍷 Рубин",
+                desc: "Глубокий бархатный вкус с ягодно-медовыми нотами. Высокое содержание ГАМК, снятие стресса и ясность ума.",
+                img: "gaba_tea.jpg"
+            },
+            {
+                id: "gaba_topaz",
+                title: "Габба Топаз",
+                baseGrams: 50,
+                basePrice: 1000,
+                minGrams: 50,
+                presets: [50, 100, 200],
+                category: "tea",
+                badge: "✨ Топаз",
+                desc: "Мягкий золотистый настой с цветочно-карамельным ароматом. Расслабление без сонливости и чистый фокус.",
+                img: "gaba_topaz.jpg"
+            },
+            {
+                id: "gaba_diamond",
+                title: "Габба Бриллиант",
+                baseGrams: 50,
+                basePrice: 1000,
+                minGrams: 50,
+                presets: [50, 100, 200],
+                category: "tea",
+                badge: "💎 Бриллиант",
+                desc: "Премиальный сорт ферментированного ГАБА-чая. Гармонизирует нервную систему и повышает продуктивность.",
+                img: "gaba_diamond.jpg"
+            },
+            {
+                id: "puer_tea",
+                title: "Пуэр Королевский",
+                baseGrams: 50,
+                basePrice: 600,
+                minGrams: 50,
+                presets: [50, 100, 357],
+                category: "tea",
+                badge: "👑 Бодрость",
+                desc: "Выдержанный Шу Пуэр с густым древесно-ореховым вкусом. Мощная ровная энергия вместо кофе и тонус ЖКТ.",
+                img: "puer_tea.jpg"
+            },
+            {
+                id: "puer_xiatuo",
+                title: "Пуэр Ся-То",
+                baseGrams: 50,
+                basePrice: 600,
+                minGrams: 50,
+                presets: [50, 100, 250],
+                category: "tea",
+                badge: "⚡ Порционный",
+                desc: "Прессованный порционный пуэр в удобных гнездах. Быстрое заваривание, насыщенный настой и заряд бодрости.",
+                img: "puer_xiatuo.jpg"
+            },
+            {
+                id: "lion_mane_1kg",
+                title: "Мицелий Ежовика (Россия)",
+                baseGrams: 100,
+                basePrice: 500,
+                minGrams: 100,
+                presets: [100, 250, 500],
+                category: "herbs",
+                badge: "🧠 От 100 г",
+                desc: "Российский мицелий высшего качества. Природный ноотроп для памяти, высокой концентрации внимания, нейрогенеза и ясности ума.",
+                img: "lion_mane_1kg.jpg"
+            },
+            {
+                id: "lion_mane",
+                title: "Мицелий Ежовика Опт (Россия)",
+                baseGrams: 10000,
+                basePrice: 25000,
+                minGrams: 10000,
+                presets: [10000, 20000, 50000],
+                category: "herbs",
+                badge: "📦 Опт от 10 кг",
+                desc: "Оптовая партия российского активного мицелия Ежовика Гребенчатого по специальной цене (от 10 кг).",
+                img: "lion_mane.jpg"
+            },
+            {
+                id: "taiga_herbs",
+                title: "Таежный сбор трав",
+                baseGrams: 50,
+                basePrice: 650,
+                minGrams: 50,
+                presets: [50, 100, 250],
+                category: "herbs",
+                badge: "🌿 Алтай и Сибирь",
+                desc: "Экологически чистые дикоросы Сибири и Алтая для мягкого очищения и природной защиты организма.",
+                img: "taiga_herbs.jpg"
+            }
+        ];
+
+        function getProductById(id) {
+            for (var i = 0; i < products.length; i++) {
+                if (products[i].id === id) return products[i];
+            }
+            return null;
+        }
+
+        function calcItemPrice(product, grams) {
+            var pricePerGram = product.basePrice / product.baseGrams;
+            return Math.round(pricePerGram * grams);
+        }
+
+        function formatWeightLabel(grams) {
+            if (grams >= 1000 && grams % 1000 === 0) {
+                return (grams / 1000) + " кг";
+            }
+            return grams + " г";
+        }
+
+        function renderCatalog() {
+            var grid = document.getElementById("catalogGrid");
+            grid.innerHTML = "";
+
+            for (var i = 0; i < products.length; i++) {
+                var item = products[i];
+                if (currentCategory !== "all" && item.category !== currentCategory) {
+                    continue;
+                }
+
+                var savedGrams = cartGrams[item.id] || 0;
+                var isEditing = openPicker[item.id] === true;
+                var defaultGrams = savedGrams > 0 ? savedGrams : item.baseGrams;
+                var previewPrice = calcItemPrice(item, defaultGrams);
+
+                var card = document.createElement("div");
+                card.className = "card" + (isEditing ? " editing" : "");
+
+                card.onclick = (function(cardEl) {
+                    return function(e) {
+                        if (e.target.tagName === "BUTTON" || e.target.tagName === "INPUT") return;
+                        cardEl.classList.toggle("expanded");
+                    };
+                })(card);
+
+                var actionBtnHtml = "";
+                if (savedGrams > 0 && !isEditing) {
+                    var itemSum = calcItemPrice(item, savedGrams);
+                    actionBtnHtml = '<button type="button" class="selected-badge-btn" onclick="openGramPicker(\'' + item.id + '\')">✓ ' + formatWeightLabel(savedGrams) + ' • ' + itemSum.toLocaleString("ru-RU") + ' ₽</button>';
+                } else if (!isEditing) {
+                    actionBtnHtml = '<button type="button" class="add-btn" onclick="openGramPicker(\'' + item.id + '\')">⚖️ Выбрать вес</button>';
+                }
+
+                var pickerHtml = "";
+                if (isEditing) {
+                    var presetsHtml = "";
+                    for (var p = 0; p < item.presets.length; p++) {
+                        var pr = item.presets[p];
+                        var prLabel = formatWeightLabel(pr);
+                        presetsHtml += '<button type="button" class="preset-chip" onclick="setGramInput(\'' + item.id + '\', ' + pr + ')">' + prLabel + '</button>';
+                    }
+
+                    var stepVal = item.minGrams >= 1000 ? 500 : 10;
+
+                    pickerHtml =
+                        '<div class="gram-picker">' +
+                            '<div class="gram-picker-label">Вес в граммах (мин. ' + formatWeightLabel(item.minGrams) + '):</div>' +
+                            '<div class="preset-row">' + presetsHtml + '</div>' +
+                            '<div class="gram-input-row">' +
+                                '<input type="number" id="input_' + item.id + '" class="gram-input" value="' + defaultGrams + '" min="' + item.minGrams + '" step="' + stepVal + '" oninput="liveRecalc(\'' + item.id + '\')">' +
+                                '<span class="gram-unit">г</span>' +
+                            '</div>' +
+                            '<div id="preview_' + item.id + '" class="gram-calc-preview">Сумма: ' + previewPrice.toLocaleString("ru-RU") + ' ₽</div>' +
+                            '<div class="gram-actions">' +
+                                (savedGrams > 0 ? '<button type="button" class="gram-remove-btn" onclick="removeItem(\'' + item.id + '\')">✕</button>' : '') +
+                                '<button type="button" class="gram-done-btn" onclick="confirmGrams(\'' + item.id + '\')">✓ Готово</button>' +
+                            '</div>' +
+                        '</div>';
+                }
+
+                var weightLabel = formatWeightLabel(item.baseGrams);
+
+                card.innerHTML =
+                    '<div class="card-badge">' + item.badge + '</div>' +
+                    '<img class="card-bg-img" src="' + item.img + '" alt="' + item.title + '" loading="lazy">' +
+                    '<div class="card-gradient-overlay"></div>' +
+                    '<div class="card-drawer">' +
+                        '<div class="drawer-header">' +
+                            '<div class="title-block">' +
+                                '<div class="card-title">' + item.title + '</div>' +
+                                '<div class="card-mini-price"><span>' + item.basePrice.toLocaleString("ru-RU") + ' ₽</span> / ' + weightLabel + '</div>' +
+                            '</div>' +
+                            actionBtnHtml +
+                        '</div>' +
+                        '<div class="drawer-details">' +
+                            '<div class="card-weight-info">Минимальный заказ: от ' + formatWeightLabel(item.minGrams) + '</div>' +
+                            '<div class="card-desc">' + item.desc + '</div>' +
+                            pickerHtml +
+                        '</div>' +
+                    '</div>';
+
+                grid.appendChild(card);
+            }
+            updateBottomBar();
+        }
+
+        function openGramPicker(productId) {
+            openPicker[productId] = true;
+            renderCatalog();
+            var inp = document.getElementById("input_" + productId);
+            if (inp) {
+                inp.focus();
+                inp.select();
+            }
+        }
+
+        function setGramInput(productId, gramsVal) {
+            var inp = document.getElementById("input_" + productId);
+            if (inp) {
+                inp.value = gramsVal;
+                liveRecalc(productId);
+            }
+        }
+
+        function liveRecalc(productId) {
+            var item = getProductById(productId);
+            var inp = document.getElementById("input_" + productId);
+            var prev = document.getElementById("preview_" + productId);
+            if (!item || !inp || !prev) return;
+
+            var g = parseInt(inp.value, 10);
+            if (isNaN(g) || g < item.minGrams) {
+                prev.textContent = "⚠️ Минимальный заказ от " + formatWeightLabel(item.minGrams);
+                prev.classList.add("error-text");
+                inp.classList.add("input-error");
+                return;
+            }
+
+            prev.classList.remove("error-text");
+            inp.classList.remove("input-error");
+            var calculated = calcItemPrice(item, g);
+            prev.textContent = "Сумма за " + formatWeightLabel(g) + ": " + calculated.toLocaleString("ru-RU") + " ₽";
+        }
+
+        function confirmGrams(productId) {
+            var item = getProductById(productId);
+            var inp = document.getElementById("input_" + productId);
+            var prev = document.getElementById("preview_" + productId);
+            if (!item || !inp) return;
+
+            var g = parseInt(inp.value, 10);
+            if (isNaN(g) || g < item.minGrams) {
+                if (prev) {
+                    prev.textContent = "⚠️ Минимальный заказ от " + formatWeightLabel(item.minGrams);
+                    prev.classList.add("error-text");
+                }
+                inp.classList.add("input-error");
+                inp.focus();
+                return;
+            }
+
+            cartGrams[productId] = g;
+            openPicker[productId] = false;
+            renderCatalog();
+        }
+
+        function removeItem(productId) {
+            delete cartGrams[productId];
+            openPicker[productId] = false;
+            renderCatalog();
+        }
+
+        function filterCategory(cat, btnElement) {
+            currentCategory = cat;
+            var buttons = document.querySelectorAll(".tab-btn");
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].classList.remove("active");
+            }
+            btnElement.classList.add("active");
+            renderCatalog();
+        }
+
+        function togglePromo() {
+            promoApplied = !promoApplied;
+            var btn = document.getElementById("promoBtn");
+            if (promoApplied) {
+                btn.textContent = "✓ FOREST10 (-10%)";
+                btn.classList.add("applied");
+            } else {
+                btn.textContent = "Применить";
+                btn.classList.remove("applied");
+            }
+            updateBottomBar();
+        }
+
+        function getCartTotals() {
+            var totalPositions = 0;
+            var totalGramsAll = 0;
+            var rawSum = 0;
+
+            for (var i = 0; i < products.length; i++) {
+                var p = products[i];
+                var g = cartGrams[p.id] || 0;
+                if (g > 0) {
+                    totalPositions += 1;
+                    totalGramsAll += g;
+                    rawSum += calcItemPrice(p, g);
+                }
+            }
+            var discountedGoodsSum = promoApplied ? Math.round(rawSum * 0.9) : rawSum;
+            return {
+                positions: totalPositions,
+                grams: totalGramsAll,
+                goodsSum: discountedGoodsSum
+            };
+        }
+
+        function updateBottomBar() {
+            var totals = getCartTotals();
+            var bar = document.getElementById("bottomBar");
+            if (totals.positions === 0) {
+                bar.style.display = "none";
+                return;
+            }
+
+            bar.style.display = "flex";
+            document.getElementById("cartCountLabel").textContent =
+                "Позиций: " + totals.positions + " (вес: " + formatWeightLabel(totals.grams) + ")" + (promoApplied ? " • -10%" : "");
+            document.getElementById("cartTotalPrice").textContent =
+                totals.goodsSum.toLocaleString("ru-RU") + " ₽";
+        }
+
+        function openCheckoutModal() {
+            document.getElementById("checkoutModal").style.display = "flex";
+            updateModalSummary();
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById("checkoutModal").style.display = "none";
+        }
+
+        function setDeliveryMethod(method) {
+            selectedDeliveryMethod = method;
+            document.getElementById("delivCourier").className = "radio-btn" + (method === "courier" ? " active" : "");
+            document.getElementById("delivPickup").className = "radio-btn" + (method === "pickup" ? " active" : "");
+            document.getElementById("addressFieldsBlock").style.display = (method === "courier") ? "block" : "none";
+            updateModalSummary();
+        }
+
+        function setPaymentMethod(method) {
+            selectedPaymentMethod = method;
+            document.getElementById("payTransfer").className = "radio-btn" + (method === "Переводом" ? " active" : "");
+            document.getElementById("payCash").className = "radio-btn" + (method === "Наличными" ? " active" : "");
+        }
+
+        function updateModalSummary() {
+            var totals = getCartTotals();
+            var deliveryCost = 0;
+            var deliveryNote = "Самовывоз (г. Томск)";
+
+            if (selectedDeliveryMethod === "courier") {
+                if (totals.goodsSum >= 5000) {
+                    deliveryCost = 0;
+                    deliveryNote = "БЕСПЛАТНО (заказ от 5 000 ₽)";
+                } else {
+                    deliveryCost = 500;
+                    deliveryNote = "500 ₽ (от 5 000 ₽ — бесплатно)";
+                }
+            }
+
+            var finalPay = totals.goodsSum + deliveryCost;
+            var box = document.getElementById("modalSummaryBox");
+            box.innerHTML =
+                "🛍 Товары" + (promoApplied ? " (со скидкой 10%)" : "") + ": <b>" + totals.goodsSum.toLocaleString("ru-RU") + " ₽</b><br>" +
+                "🚚 Доставка: <b>" + deliveryNote + "</b><br>" +
+                "💰 ИТОГО К ОПЛАТЕ: <b>" + finalPay.toLocaleString("ru-RU") + " ₽</b>";
+        }
+
+        function submitFinalOrder() {
+            var customerName = document.getElementById("orderName").value.trim() || "Гость приложения";
+            var phone = document.getElementById("orderPhone").value.trim();
+            if (!phone) {
+                alert("Пожалуйста, укажите ваш контактный телефон для связи!");
+                document.getElementById("orderPhone").focus();
+                return;
+            }
+
+            var city = document.getElementById("orderCity").value.trim();
+            var street = document.getElementById("orderStreet").value.trim();
+            var house = document.getElementById("orderHouse").value.trim();
+
+            if (selectedDeliveryMethod === "courier" && !city) {
+                alert("Пожалуйста, укажите город для доставки!");
+                document.getElementById("orderCity").focus();
+                return;
+            }
+
+            var itemsList = [];
+            for (var i = 0; i < products.length; i++) {
+                var p = products[i];
+                var g = cartGrams[p.id] || 0;
+                if (g > 0) {
+                    var sub = calcItemPrice(p, g);
+                    itemsList.push({
+                        title: p.title,
+                        grams: g,
+                        subtotal: sub
+                    });
+                }
+            }
+
+            var totals = getCartTotals();
+            var deliveryCost = (selectedDeliveryMethod === "courier" && totals.goodsSum < 5000) ? 500 : 0;
+            var finalPay = totals.goodsSum + deliveryCost;
+
+            var addressStr = selectedDeliveryMethod === "pickup"
+                ? "Самовывоз (г. Томск)"
+                : (city + (street ? ", ул. " + street : "") + (house ? ", д. " + house : ""));
+
+            var orderObj = {
+                customer_name: customerName,
+                source: isStandalone ? "Установленное PWA-приложение" : "Веб-витрина (Браузер / Соцсети)",
+                items: itemsList,
+                promo: promoApplied ? "FOREST10 (-10%)" : "Нет",
+                goods_total: totals.goodsSum,
+                delivery_method: selectedDeliveryMethod === "pickup" ? "Самовывоз" : "Курьер / Доставка",
+                delivery_cost: deliveryCost,
+                address: addressStr,
+                phone: phone,
+                payment_method: selectedPaymentMethod,
+                comment: document.getElementById("orderComment").value.trim() || "Нет",
+                total: finalPay
+            };
+
+            try { localStorage.setItem("ff_last_phone", phone); } catch (e) {}
+
+            var payload = JSON.stringify(orderObj);
+            var isInsideTelegram = tg && tg.platform && tg.platform !== 'unknown';
+
+            if (isInsideTelegram) {
+                tg.sendData(payload);
+                return;
+            }
+
+            var submitBtn = document.getElementById("submitOrderBtn");
+            submitBtn.disabled = true;
+            submitBtn.textContent = "⏳ Отправка заказа...";
+
+            fetch(API_ORDER_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: payload
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "✓ Подтвердить заказ";
+
+                if (data && data.ok) {
+                    var ordId = (data.order && data.order.order_id) ? data.order.order_id : "";
+                    if (ordId) {
+                        saveOrderIdLocal(ordId);
+                    }
+
+                    closeCheckoutModal();
+                    cartGrams = {};
+                    openPicker = {};
+                    renderCatalog();
+
+                    var summaryHtml =
+                        "Спасибо, <b>" + customerName + "</b>! Ваш <b>Заказ #" + ordId + "</b> на сумму <b>" + finalPay.toLocaleString("ru-RU") + " ₽</b> передан менеджеру Матвею.<br><br>" +
+                        "📞 Мы свяжемся с вами по номеру <b>" + phone + "</b> в ближайшее время.<br>" +
+                        "📦 Отслеживать статус сборки и трек-номер доставки вы можете прямо в приложении по кнопке <b>«Мои заказы и статус»</b>!";
+                    document.getElementById("orderSuccessSummary").innerHTML = summaryHtml;
+                    document.getElementById("orderSuccessModal").style.display = "flex";
+                } else {
+                    alert("Произошла ошибка при отправке. Пожалуйста, свяжитесь с менеджером по тел. +7(996)-636-45-66");
+                }
+            })
+            .catch(function() {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "✓ Подтвердить заказ";
+                alert("Не удалось соединиться с сервером. Вы можете позвонить менеджеру Матвею: +7(996)-636-45-66");
+            });
+        }
+
+        updateMyOrdersButtonBadge();
+        renderCatalog();
+    </script>
+</body>
+</html>
