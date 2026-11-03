@@ -19,7 +19,7 @@ def make_init_data(user=None, auth_date=1_800_000_000, token=BOT_TOKEN):
         "user": json.dumps(user or {"id": 12345, "first_name": "Test"}, separators=(",", ":")),
     }
     check_string = "\n".join(f"{k}={v}" for k, v in sorted(values.items()))
-    secret = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
+    secret = hmac.new(token.encode(), b"WebAppData", hashlib.sha256).digest()
     values["hash"] = hmac.new(secret, check_string.encode(), hashlib.sha256).hexdigest()
     return urlencode(values)
 
@@ -27,10 +27,7 @@ def make_init_data(user=None, auth_date=1_800_000_000, token=BOT_TOKEN):
 class TelegramInitDataTests(unittest.TestCase):
     def test_valid_data_returns_verified_user(self):
         raw = make_init_data()
-        self.assertEqual(
-            verify_telegram_init_data(raw, BOT_TOKEN, now=1_800_000_100)["id"],
-            12345,
-        )
+        self.assertEqual(verify_telegram_init_data(raw, BOT_TOKEN, now=1_800_000_100)["id"], 12345)
 
     def test_tampered_data_is_rejected(self):
         raw = make_init_data().replace("first_name", "last_name")
@@ -57,7 +54,7 @@ class TelegramInitDataTests(unittest.TestCase):
     def test_missing_user_is_rejected(self):
         values = {"auth_date": "1800000000"}
         check = "auth_date=1800000000"
-        secret = hmac.new(b"WebAppData", BOT_TOKEN.encode(), hashlib.sha256).digest()
+        secret = hmac.new(BOT_TOKEN.encode(), b"WebAppData", hashlib.sha256).digest()
         values["hash"] = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
         with self.assertRaises(TelegramInitDataError):
             verify_telegram_init_data(urlencode(values), BOT_TOKEN, now=1_800_000_100)
