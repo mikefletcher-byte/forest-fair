@@ -23,5 +23,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run unit tests
+      - name: Install API runtime dependencies
+        run: python -m pip install aiohttp "aiogram>=3,<4"
+
+      - name: Run unit and HTTP integration tests
         run: python -m unittest discover -v
