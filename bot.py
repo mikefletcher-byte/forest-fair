@@ -1423,6 +1423,27 @@ async def handle_auth_me(request: web.Request):
     )
 
 
+async def handle_auth_logout(request: web.Request):
+    """Revoke the current bearer session."""
+    auth_store: AuthStore = request.app["auth_store"]
+    session = get_bearer_session(
+        auth_store, request.headers.get("Authorization")
+    )
+    if not session:
+        return web.json_response(
+            {"ok": False, "error": "unauthorized"},
+            status=401,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    revoked = auth_store.revoke_session(
+        int(session["user_id"]), int(session["session_id"])
+    )
+    return web.json_response(
+        {"ok": bool(revoked)},
+        headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+    )
+
+
 async def handle_options(request: web.Request):
     return web.Response(status=200, headers=CORS_HEADERS)
 
@@ -1502,6 +1523,8 @@ async def start_http_api(bot: Bot):
     app.router.add_post("/api/auth/telegram", handle_telegram_auth)
     app.router.add_route("OPTIONS", "/api/auth/me", handle_options)
     app.router.add_get("/api/auth/me", handle_auth_me)
+    app.router.add_route("OPTIONS", "/api/auth/logout", handle_options)
+    app.router.add_post("/api/auth/logout", handle_auth_logout)
     app.router.add_route("OPTIONS", "/api/order", handle_options)
     app.router.add_post("/api/order", handle_external_order)
     app.router.add_route("OPTIONS", "/api/orders", handle_options)
