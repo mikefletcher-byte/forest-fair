@@ -1276,32 +1276,9 @@
             }
         });
 
-        function getSavedOrderIds() {
-            try {
-                var raw = localStorage.getItem("ff_order_ids");
-                return raw ? JSON.parse(raw) : [];
-            } catch (e) {
-                return [];
-            }
-        }
-
-        function saveOrderIdLocal(orderId) {
-            try {
-                var list = getSavedOrderIds();
-                if (list.indexOf(orderId) === -1) {
-                    list.push(orderId);
-                    localStorage.setItem("ff_order_ids", JSON.stringify(list));
-                }
-                updateMyOrdersButtonBadge();
-            } catch (e) {}
-        }
-
         function updateMyOrdersButtonBadge() {
-            var list = getSavedOrderIds();
             var lbl = document.getElementById("myOrdersBtnLabel");
-            if (lbl) {
-                lbl.textContent = list.length > 0 ? ("Мои заказы (" + list.length + ")") : "Мои заказы и статус";
-            }
+            if (lbl) lbl.textContent = "Мои заказы и статус";
         }
 
         function openMyOrdersModal() {
@@ -1966,8 +1943,6 @@
                 total: finalPay
             };
 
-            try { localStorage.setItem("ff_last_phone", phone); } catch (e) {}
-
             var payload = JSON.stringify(orderObj);
             var submitBtn = document.getElementById("submitOrderBtn");
             submitBtn.disabled = true;
@@ -1983,8 +1958,6 @@
 
                 if (data && data.ok) {
                     var ordId = (data.order && data.order.order_id) ? data.order.order_id : "";
-                    if (ordId) saveOrderIdLocal(ordId);
-
                     closeCheckoutModal();
                     cartGrams = {};
                     openPicker = {};
