@@ -1342,7 +1342,8 @@ async def handle_telegram_auth(request: web.Request):
             },
             headers={**CORS_HEADERS, "Cache-Control": "no-store"},
         )
-    except TelegramInitDataError:
+    except TelegramInitDataError as exc:
+        logging.warning("Telegram initData verification failed: %s", exc)
         return web.json_response(
             {"ok": False, "error": "telegram_auth_failed"},
             status=401,
