@@ -24,6 +24,10 @@ from aiogram.types import (
 import aiohttp
 from aiohttp import web
 
+from auth_store import AuthStore, InactiveUser
+from auth_api import get_bearer_session, attach_order_owner, list_orders_for_user
+from telegram_auth import TelegramInitDataError, verify_telegram_init_data
+
 
 # =====================================================================
 # КОНФИГУРАЦИЯ И КЛЮЧИ
@@ -81,6 +85,7 @@ MANAGER_CHAT_ID_FILE = os.path.join(BASE_DIR, "manager_id.txt")
 ADMIN_CHAT_ID_FILE = os.path.join(BASE_DIR, "admin_id.txt")
 REMINDERS_FILE = os.path.join(BASE_DIR, "reminders.json")
 ORDERS_FILE = os.path.join(BASE_DIR, "orders.json")
+AUTH_DB_FILE = os.environ.get("FORESTFAIR_AUTH_DB", os.path.join(BASE_DIR, "auth.sqlite3"))
 
 FILE_LOCK = asyncio.Lock()
 
@@ -174,7 +179,7 @@ async def save_orders_async(data: dict):
             logging.warning("Ошибка сохранения orders.json: %s", e)
 
 
-async def create_saved_order(data: dict, tg_user_id=None) -> dict:
+async def create_saved_order(data: dict, tg_user_id=None, user_id=None) -> dict:
     async with FILE_LOCK:
         orders = load_orders()
         next_num = 101 + len(orders)
@@ -198,6 +203,7 @@ async def create_saved_order(data: dict, tg_user_id=None) -> dict:
             "status_text": "🟡 Принят, ожидает подтверждения менеджера",
             "track_number": "",
             "tg_user_id": tg_user_id,
+            "user_id": int(user_id) if user_id is not None else None,
         }
         orders[order_id] = record
         try:
@@ -1205,61 +1211,13 @@ async def cmd_start(message: Message):
 
 
 @dp.message(F.web_app_data)
-async def handle_webapp_order(message: Message, bot: Bot):
-    user = message.from_user
-    await check_and_save_manager(user)
-    try:
-        data = json.loads(message.web_app_data.data)
-        full_name = user.full_name or "Покупатель"
-        if not data.get("customer_name"):
-            data["customer_name"] = full_name
-
-        saved_order = await create_saved_order(data, tg_user_id=user.id)
-        order_id = saved_order["order_id"]
-        core_order_text = format_order_core_text(data, order_id=order_id)
-
-        username_str = (
-            "@" + user.username
-            if user.username
-            else "не указан (переход по кнопке ниже)"
-        )
-        user_link = "<a href='tg://user?id=" + str(user.id) + "'>" + full_name + "</a>"
-
-        manager_notification = (
-            "🔥 <b>НОВЫЙ ЗАКАЗ #" + order_id + " ИЗ TELEGRAM!</b> 🔥\n\n"
-            "👤 <b>Покупатель:</b> " + user_link + "\n"
-            "📱 <b>Username:</b> " + username_str + "\n"
-            "🆔 <b>ID клиента:</b> <code>" + str(user.id) + "</code>\n"
-            "💡 <i>Добавить трек-номер:</i> <code>/track "
-            + order_id
-            + " ТРЕК</code>\n"
-            "➖➖➖➖➖➖➖➖➖➖➖➖\n" + core_order_text
-        )
-
-        kb = get_manager_order_kb(order_id, tg_user_id=user.id, full_name=full_name)
-        await send_manager_alerts(bot, manager_notification, kb)
-
-        final_user_text = (
-            core_order_text
-            + "\n\n➖➖➖➖➖➖➖➖➖➖➖➖\n"
-            + "✅ <b>Заказ #"
-            + order_id
-            + " успешно принят! С вами в ближайшее время свяжется наш менеджер Матвей (@MBarukh).</b>\n\n"
-            + "🌲 <i>Спасибо за выбор «Forest Fair»! Приятного вам дня и крепкого сибирского здоровья!</i> 🍃"
-        )
-
-        await message.answer(text=final_user_text, reply_markup=main_kb)
-        await message.answer(text=GUIDE_TEXT, reply_markup=main_kb)
-
-        await register_customer_order(user.id, full_name)
-
-    except Exception as e:
-        logging.error("Ошибка обработки данных магазина: %s", e)
-        await message.answer(
-            "📦 Заказ получен! Пожалуйста, напишите менеджеру Матвею (@MBarukh) для завершения оформления.",
-            reply_markup=main_kb,
-        )
-
+async def handle_webapp_order(message: Message):
+    """Reject legacy sendData orders; all PWA orders must use authenticated HTTP API."""
+    await message.answer(
+        "Версия витрины устарела. Откройте магазин заново через кнопку «🛒 Открыть Магазин» "
+        "и войдите в аккаунт Forest Fair перед оформлением заказа.",
+        reply_markup=main_kb,
+    )
 
 @dp.message(F.chat.type == ChatType.PRIVATE, F.text == "🍄 Каталог и цены")
 async def show_catalog(message: Message):
@@ -1321,10 +1279,122 @@ async def consultant_handler(message: Message, bot: Bot):
 # ВЕБ-ПРИЕМНИК ЗАКАЗОВ (HTTPS)
 # =====================================================================
 CORS_HEADERS = {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": "https://mikefletcher-byte.github.io",
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Vary": "Origin",
 }
+
+
+async def handle_telegram_auth(request: web.Request):
+    """Authenticate a Telegram WebApp using Telegram-signed initData."""
+    if not TELEGRAM_TOKEN:
+        return web.json_response(
+            {"ok": False, "error": "telegram_auth_unavailable"},
+            status=503,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    try:
+        if request.content_length is not None and request.content_length > 16_384:
+            raise TelegramInitDataError("initData is too large")
+        payload = await request.json()
+        if not isinstance(payload, dict):
+            raise TelegramInitDataError("invalid request body")
+        init_data = payload.get("initData")
+        verified_user = verify_telegram_init_data(init_data, TELEGRAM_TOKEN)
+        telegram_id = int(verified_user["id"])
+        auth_store: AuthStore = request.app["auth_store"]
+        user_id, created = auth_store.get_or_create_user_for_identity(
+            "telegram", telegram_id
+        )
+        user_agent = request.headers.get("User-Agent", "")[:200] or None
+        session_id, session_token, expires_at = auth_store.create_session(
+            user_id, device_label=user_agent
+        )
+        return web.json_response(
+            {
+                "ok": True,
+                "token": session_token,
+                "expires_at": expires_at,
+                "user": {"user_id": user_id},
+                "account_created": created,
+                "session_id": session_id,
+            },
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    except TelegramInitDataError:
+        return web.json_response(
+            {"ok": False, "error": "telegram_auth_failed"},
+            status=401,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    except InactiveUser:
+        return web.json_response(
+            {"ok": False, "error": "account_unavailable"},
+            status=403,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return web.json_response(
+            {"ok": False, "error": "invalid_request"},
+            status=400,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    except Exception:
+        logging.exception("Ошибка Telegram-аутентификации")
+        return web.json_response(
+            {"ok": False, "error": "authentication_unavailable"},
+            status=500,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+
+
+async def handle_auth_me(request: web.Request):
+    """Return the account associated with the presented active session."""
+    auth_store: AuthStore = request.app["auth_store"]
+    session = get_bearer_session(
+        auth_store, request.headers.get("Authorization")
+    )
+    if not session:
+        return web.json_response(
+            {"ok": False, "error": "unauthorized"},
+            status=401,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    return web.json_response(
+        {
+            "ok": True,
+            "user": {"user_id": session["user_id"]},
+            "session": {
+                "id": session["session_id"],
+                "created_at": session["created_at"],
+                "expires_at": session["expires_at"],
+                "device_label": session["device_label"],
+            },
+        },
+        headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+    )
+
+
+async def handle_auth_logout(request: web.Request):
+    """Revoke the current bearer session."""
+    auth_store: AuthStore = request.app["auth_store"]
+    session = get_bearer_session(
+        auth_store, request.headers.get("Authorization")
+    )
+    if not session:
+        return web.json_response(
+            {"ok": False, "error": "unauthorized"},
+            status=401,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    revoked = auth_store.revoke_session(
+        int(session["user_id"]), int(session["session_id"])
+    )
+    return web.json_response(
+        {"ok": bool(revoked)},
+        headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+    )
 
 
 async def handle_options(request: web.Request):
@@ -1332,16 +1402,30 @@ async def handle_options(request: web.Request):
 
 
 async def handle_external_order(request: web.Request):
+    auth_store: AuthStore = request.app["auth_store"]
+    session = get_bearer_session(
+        auth_store, request.headers.get("Authorization")
+    )
+    if not session:
+        return web.json_response(
+            {"ok": False, "error": "unauthorized"},
+            status=401,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+
     bot: Bot = request.app["bot"]
     try:
         data = await request.json()
+        data = attach_order_owner(data, int(session["user_id"]))
         customer_name = (
             data.get("customer_name", "").strip() or "Покупатель из приложения"
         )
         data["customer_name"] = customer_name
         source_label = data.get("source", "Веб-приложение (PWA / Браузер)")
 
-        saved_order = await create_saved_order(data, tg_user_id=None)
+        saved_order = await create_saved_order(
+            data, tg_user_id=None, user_id=int(session["user_id"])
+        )
         order_id = saved_order["order_id"]
         core_order_text = format_order_core_text(data, order_id=order_id)
 
@@ -1358,47 +1442,64 @@ async def handle_external_order(request: web.Request):
         kb = get_manager_order_kb(order_id, tg_user_id=None, full_name=customer_name)
         await send_manager_alerts(bot, manager_notification, kb)
         return web.json_response(
-            {"ok": True, "order": saved_order}, headers=CORS_HEADERS
+            {"ok": True, "order": saved_order},
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
         )
-    except Exception as e:
-        logging.error("Ошибка приема внешнего заказа: %s", e)
+    except (json.JSONDecodeError, UnicodeDecodeError, ValueError, AttributeError):
         return web.json_response(
-            {"ok": False, "error": str(e)}, status=400, headers=CORS_HEADERS
+            {"ok": False, "error": "invalid_order"},
+            status=400,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    except Exception:
+        logging.exception("Ошибка приема авторизованного заказа")
+        return web.json_response(
+            {"ok": False, "error": "order_unavailable"},
+            status=500,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
         )
 
 
 async def handle_get_orders(request: web.Request):
-    try:
-        ids_param = request.query.get("ids", "").strip()
-        phone_param = request.query.get("phone", "").strip()
-        orders = load_orders()
-        result = []
-
-        if ids_param:
-            id_list = [x.strip() for x in ids_param.split(",") if x.strip()]
-            for oid in reversed(id_list):
-                if oid in orders:
-                    result.append(orders[oid])
-        elif phone_param:
-            clean_p = "".join(ch for ch in phone_param if ch.isdigit())[-10:]
-            if len(clean_p) >= 6:
-                for oid, rec in reversed(list(orders.items())):
-                    rec_p = "".join(ch for ch in rec.get("phone", "") if ch.isdigit())[-10:]
-                    if clean_p in rec_p:
-                        result.append(rec)
-
+    auth_store: AuthStore = request.app["auth_store"]
+    session = get_bearer_session(
+        auth_store, request.headers.get("Authorization")
+    )
+    if not session:
         return web.json_response(
-            {"ok": True, "orders": result[:15]}, headers=CORS_HEADERS
+            {"ok": False, "error": "unauthorized"},
+            status=401,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
         )
-    except Exception as e:
+
+    try:
+        orders = load_orders()
+        result = list_orders_for_user(orders, int(session["user_id"]))
         return web.json_response(
-            {"ok": False, "error": str(e)}, status=400, headers=CORS_HEADERS
+            {"ok": True, "orders": result},
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        )
+    except Exception:
+        logging.exception("Ошибка получения заказов аккаунта")
+        return web.json_response(
+            {"ok": False, "error": "orders_unavailable"},
+            status=500,
+            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
         )
 
 
 async def start_http_api(bot: Bot):
-    app = web.Application()
+    auth_store = AuthStore(AUTH_DB_FILE)
+    auth_store.initialize()
+    app = web.Application(client_max_size=16_384)
     app["bot"] = bot
+    app["auth_store"] = auth_store
+    app.router.add_route("OPTIONS", "/api/auth/telegram", handle_options)
+    app.router.add_post("/api/auth/telegram", handle_telegram_auth)
+    app.router.add_route("OPTIONS", "/api/auth/me", handle_options)
+    app.router.add_get("/api/auth/me", handle_auth_me)
+    app.router.add_route("OPTIONS", "/api/auth/logout", handle_options)
+    app.router.add_post("/api/auth/logout", handle_auth_logout)
     app.router.add_route("OPTIONS", "/api/order", handle_options)
     app.router.add_post("/api/order", handle_external_order)
     app.router.add_route("OPTIONS", "/api/orders", handle_options)
