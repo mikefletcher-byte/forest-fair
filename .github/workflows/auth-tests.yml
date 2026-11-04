@@ -3,6 +3,7 @@ name: Auth module tests
 on:
   push:
     branches:
+      - main
       - integration/unified-auth-main
   pull_request:
     branches:
