@@ -46,12 +46,17 @@
     const token = readToken();
     if (token) headers.set("Authorization", "Bearer " + token);
 
-    const response = await fetch(API_BASE + path, {
-      ...options,
-      headers,
-      cache: "no-store",
-      credentials: "omit"
-    });
+    let response;
+    try {
+      response = await fetch(API_BASE + path, {
+        ...options,
+        headers,
+        cache: "no-store",
+        credentials: "omit"
+      });
+    } catch (_) {
+      throw new Error("Не удалось связаться с сервером авторизации. Возможно, API ещё не обновлён или сервер недоступен. Попробуйте позже.");
+    }
 
     let payload;
     try {
