@@ -58,7 +58,7 @@ goto :end
 echo.
 echo ===================================================
 echo ERROR: Update stopped. Check the message above.
-echo The service was not restarted if upload/verification failed.
+echo Restart is skipped if upload or pre-restart file checks fail.
 echo ===================================================
 
 :end
