@@ -517,9 +517,7 @@ async def publish_vk_wall_post(
 main_kb = ReplyKeyboardMarkup(
     keyboard=[
         [
-            KeyboardButton(
-                text="🛒 Открыть Магазин", web_app=WebAppInfo(url=WEBAPP_URL)
-            )
+            KeyboardButton(text="🛒 Открыть Магазин")
         ],
         [
             KeyboardButton(text="🍄 Каталог и цены"),
@@ -532,6 +530,18 @@ main_kb = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True,
     input_field_placeholder="Откройте магазин или задайте вопрос...",
+)
+
+
+shop_webapp_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="🛒 Открыть Магазин",
+                web_app=WebAppInfo(url=WEBAPP_URL),
+            )
+        ]
+    ]
 )
 
 
@@ -637,7 +647,7 @@ WELCOME_TEXT = (
     "🌲 <b>Добро пожаловать в «Forest Fair — Лесная Ярмарка»!</b> 🌲\n\n"
     "Мы находимся в сердце Сибири — в г. <b>Томск</b>, и бережно заготавливаем для вас "
     "таежную продукцию, целебные дикоросы, лесные грибы и премиальные чаи.\n\n"
-    "🛒 <b>Нажмите кнопку «Открыть Магазин» внизу экрана</b>, чтобы открыть интерактивную витрину с расчетом веса и оформлением доставки!\n\n"
+    "🛒 <b>Нажмите кнопку «Открыть Магазин» под этим сообщением</b>, чтобы открыть интерактивную витрину с расчетом веса и оформлением доставки!\n\n"
     "🌿 Или <b>просто напишите любой вопрос прямо в этот чат</b> — мы подробно проконсультируем вас!\n\n"
     "🔗 <b>Наши контакты:</b>\n"
     "• Сообщество TG: <a href='https://t.me/ForestFair70'>Forest Fair — Лесная Ярмарка</a>\n"
@@ -1194,20 +1204,30 @@ async def cmd_start(message: Message):
     if param == "shop":
         shop_text = (
             "🌲 <b>Добро пожаловать в магазин «Forest Fair — Лесная Ярмарка»!</b> 🌲\n\n"
-            "👇 <b>Нажмите на большую кнопку «🛒 Открыть Магазин» в самом низу экрана</b>, "
+            "👇 <b>Нажмите кнопку «🛒 Открыть Магазин» под этим сообщением</b>, "
             "чтобы открыть интерактивную витрину с выбором веса, промокодом и доставкой!\n\n"
             "💬 А если нужна помощь с подбором — просто напишите свой вопрос прямо в этот чат.\n\n"
             "🔗 <b>Контакты:</b>\n"
             "• Менеджер: @MBarukh (Матвей)\n"
             "• 💻 Digital-архитектура: @DJonWeaK"
         )
-        await send_photo_fast(message, shop_text, main_kb)
+        await send_photo_fast(message, shop_text, shop_webapp_kb)
+        await message.answer("Дополнительные разделы доступны в меню ниже.", reply_markup=main_kb)
     elif param == "catalog":
         await message.answer(text=CATALOG_TEXT, reply_markup=main_kb)
     elif param == "promo":
         await send_photo_fast(message, PROMO_TEXT, main_kb)
     else:
-        await send_photo_fast(message, WELCOME_TEXT, main_kb)
+        await send_photo_fast(message, WELCOME_TEXT, shop_webapp_kb)
+        await message.answer("Дополнительные разделы доступны в меню ниже.", reply_markup=main_kb)
+
+
+@dp.message(F.chat.type == ChatType.PRIVATE, F.text == "🛒 Открыть Магазин")
+async def open_shop_from_reply_keyboard(message: Message):
+    await message.answer(
+        "Нажмите кнопку ниже, чтобы открыть интерактивную витрину Forest Fair.",
+        reply_markup=shop_webapp_kb,
+    )
 
 
 @dp.message(F.web_app_data)
