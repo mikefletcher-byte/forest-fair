@@ -10,7 +10,7 @@ from urllib.parse import parse_qsl
 
 
 class TelegramInitDataError(ValueError):
-    """Telegram initData is malformed, expired, or has an invalid signature."""
+    """Telegram WebApp initData is malformed, expired, or has an invalid signature."""
 
 
 def verify_telegram_init_data(
@@ -42,8 +42,8 @@ def verify_telegram_init_data(
         f"{key}={value}" for key, value in sorted(values.items())
         if key != "hash"
     )
-    # Telegram's documented derivation: HMAC key is the bot token,
-    # message is the literal "WebAppData".
+    # Telegram's documented bot-owner validation includes every field except hash.
+    # The separate Ed25519 signature field is still part of this HMAC data-check string.
     secret_key = hmac.new(
         bot_token.encode("utf-8"), b"WebAppData", hashlib.sha256
     ).digest()
@@ -51,7 +51,34 @@ def verify_telegram_init_data(
         secret_key, data_check_string.encode("utf-8"), hashlib.sha256
     ).hexdigest()
     if not hmac.compare_digest(expected_hash, received_hash.lower()):
-        raise TelegramInitDataError("Telegram signature verification failed")
+        # Safe diagnostics: never log initData, user data, hash, signature, or token.
+        # The alternate check tells us whether the received hash matches if signature
+        # is omitted, without changing the actual authentication decision.
+        without_signature_match = False
+        if "signature" in values:
+            alternate_string = "\n".join(
+                f"{key}={value}" for key, value in sorted(values.items())
+                if key not in {"hash", "signature"}
+            )
+            alternate_hash = hmac.new(
+                secret_key, alternate_string.encode("utf-8"), hashlib.sha256
+            ).hexdigest()
+            without_signature_match = hmac.compare_digest(
+                alternate_hash, received_hash.lower()
+            )
+        diagnostic = (
+            "Telegram signature verification failed "
+            f"(init_data_length={len(init_data)}, "
+            f"field_count={len(values)}, "
+            f"signature_present={'signature' in values}, "
+            f"user_present={'user' in values}, "
+            f"auth_date_present={'auth_date' in values}, "
+            f"query_id_present={'query_id' in values}, "
+            f"chat_instance_present={'chat_instance' in values}, "
+            f"chat_type_present={'chat_type' in values}, "
+            f"hmac_without_signature_match={without_signature_match})"
+        )
+        raise TelegramInitDataError(diagnostic)
     try:
         auth_date = int(values["auth_date"])
         user = json.loads(values["user"])
