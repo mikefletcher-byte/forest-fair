@@ -1981,7 +1981,9 @@
 
         function openAuthModal() {
             var signed = ForestFairAuth.isSignedIn();
-            document.getElementById("authModalMessage").textContent = signed ? "Вы вошли в аккаунт Forest Fair. Сессия активна в этой вкладке." : "Для входа через Telegram откройте витрину внутри Telegram. Другие способы входа появятся следующим этапом.";
+            document.getElementById("authModalMessage").textContent = signed
+                ? "Вы вошли в аккаунт Forest Fair. Сессия активна в этой вкладке."
+                : (window.ffAuthError || "Если витрина открыта через кнопку «🛒 Открыть Магазин» в Telegram, вход выполняется автоматически. В обычном браузере нажмите «Продолжить через Telegram».");
             document.getElementById("telegramLoginBtn").style.display = signed ? "none" : "block";
             document.getElementById("authLogoutBtn").style.display = signed ? "block" : "none";
             document.getElementById("authModal").style.display = "flex";
@@ -2013,13 +2015,54 @@
             catch(e){document.getElementById("authModalMessage").textContent=e.message||"Ошибка выхода.";}
         }
         async function restoreAuthState() {
-            if(!ForestFairAuth.isSignedIn()){setAuthUi(null);return;}
-            try{var user=await ForestFairAuth.me();setAuthUi(user);}catch(_){setAuthUi(null);}
+            var tgWebApp = window.Telegram && window.Telegram.WebApp;
+            if (tgWebApp && typeof tgWebApp.ready === "function") tgWebApp.ready();
+
+            if (ForestFairAuth.isSignedIn()) {
+                try {
+                    var existingUser = await ForestFairAuth.me();
+                    if (existingUser) {
+                        setAuthUi(existingUser);
+                        return;
+                    }
+                } catch (_) {
+                    setAuthUi(null);
+                }
+            }
+
+            if (!tgWebApp || !tgWebApp.initData) {
+                setAuthUi(null);
+                return;
+            }
+
+            var loginButton = document.getElementById("telegramLoginBtn");
+            var authMessage = document.getElementById("authModalMessage");
+            try {
+                var user = await ForestFairAuth.loginTelegram();
+                window.ffAuthError = "";
+                setAuthUi(user);
+                if (document.getElementById("authModal").style.display === "flex") {
+                    authMessage.textContent = "✓ Вход через Telegram выполнен.";
+                    loginButton.style.display = "none";
+                    document.getElementById("authLogoutBtn").style.display = "block";
+                }
+                if (window.ffPendingCheckout) {
+                    window.ffPendingCheckout = false;
+                    closeAuthModal();
+                    openCheckoutModal();
+                }
+            } catch (error) {
+                window.ffAuthError = error.message || "Не удалось выполнить вход через Telegram.";
+                setAuthUi(null);
+                if (document.getElementById("authModal").style.display === "flex") {
+                    authMessage.textContent = window.ffAuthError;
+                }
+            }
         }
 
         updateMyOrdersButtonBadge();
         renderCatalog();
-        restoreAuthState();
+        window.addEventListener("load", restoreAuthState, { once: true });
     </script>
 </body>
 </html>
