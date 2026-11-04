@@ -9,6 +9,7 @@ on:
       - auth_store.py
       - auth_email.py
       - telegram_auth.py
+      - test_telegram_auth.py
       - auth_schema.sql
       - .github/workflows/deploy-vps.yml
   workflow_dispatch:
