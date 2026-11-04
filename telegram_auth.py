@@ -24,9 +24,11 @@ TELEGRAM_ED25519_PUBLIC_KEY = (
 def _verify_ed25519_signature(
     values: dict[str, str],
     bot_id: str,
-    public_key_hex: str = TELEGRAM_ED25519_PUBLIC_KEY,
+    public_key_hex: str | None = None,
 ) -> bool:
     """Verify Telegram's bot_id-bound Ed25519 signature without exposing payload data."""
+    if public_key_hex is None:
+        public_key_hex = TELEGRAM_ED25519_PUBLIC_KEY
     signature_text = values.get("signature", "")
     if not signature_text or not bot_id.isdigit():
         return False
