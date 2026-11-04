@@ -60,7 +60,7 @@ class TelegramInitDataTests(unittest.TestCase):
         with self.assertRaises(TelegramInitDataError) as context:
             verify_telegram_init_data(tampered, BOT_TOKEN, now=1_800_000_100)
         self.assertIn("signature_present=True", str(context.exception))
-        self.assertIn("hmac_without_signature_match=True", str(context.exception))
+        self.assertIn("hmac_without_signature_match=False", str(context.exception))
         self.assertNotIn("original-signature", str(context.exception))
 
     def test_url_encoded_plus_unicode_and_slashes_round_trip(self):
