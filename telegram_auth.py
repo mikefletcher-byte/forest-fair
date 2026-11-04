@@ -40,7 +40,7 @@ def verify_telegram_init_data(
         raise TelegramInitDataError("missing or invalid hash")
     data_check_string = "\n".join(
         f"{key}={value}" for key, value in sorted(values.items())
-        if key not in {"hash", "signature"}
+        if key != "hash"
     )
     # Telegram's documented derivation: HMAC key is the bot token,
     # message is the literal "WebAppData".
