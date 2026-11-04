@@ -1995,10 +1995,26 @@
         }
         async function loginWithTelegram() {
             var b=document.getElementById("telegramLoginBtn"), m=document.getElementById("authModalMessage");
-            var tgWebApp = window.Telegram && window.Telegram.WebApp;
-            if (!tgWebApp || !tgWebApp.initData) {
-                m.textContent="Открываем чат с ботом. В Telegram нажмите «🛒 Открыть Магазин», затем повторите вход в витрине.";
-                window.location.href="https://t.me/ForestFairTomsk_bot?start=shop";
+            var tgRoot = window.Telegram;
+            var tgWebApp = tgRoot && tgRoot.WebApp;
+            var initData = tgWebApp && typeof tgWebApp.initData === "string" ? tgWebApp.initData : "";
+            if (!tgWebApp || !initData) {
+                var diagnostics = [
+                    "Вход не запущен: Telegram не передал initData.",
+                    "SDK=" + (tgRoot ? "loaded" : "missing"),
+                    "WebApp=" + (tgWebApp ? "available" : "missing"),
+                    "initDataLength=" + initData.length,
+                    "platform=" + (tgWebApp && tgWebApp.platform ? tgWebApp.platform : "unknown"),
+                    "version=" + (tgWebApp && tgWebApp.version ? tgWebApp.version : "unknown")
+                ].join(" | ");
+                m.textContent = diagnostics;
+                console.warn("Forest Fair Telegram WebApp diagnostics", {
+                    sdkLoaded: Boolean(tgRoot),
+                    webAppAvailable: Boolean(tgWebApp),
+                    initDataLength: initData.length,
+                    platform: tgWebApp && tgWebApp.platform ? tgWebApp.platform : null,
+                    version: tgWebApp && tgWebApp.version ? tgWebApp.version : null
+                });
                 return;
             }
             b.disabled=true; m.textContent="Подтверждаем вход на сервере.";
