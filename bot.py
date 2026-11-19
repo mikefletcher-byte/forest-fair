@@ -323,44 +323,49 @@ SYSTEM_PROMPT = """
 """
 
 MODELS_POOL = [
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-flash-lite-latest",
-    "gemini-1.5-flash",
+    # These models were verified with the project's API key and GenerateContent.
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
 ]
 
 
 async def update_models_pool():
-    global MODELS_POOL
+    """Keep the explicitly verified model list; catalog visibility is not quota proof."""
     if not GEMINI_API_KEY:
+        logging.warning("GEMINI_API_KEY не найден, генерация Gemini отключена.")
         return
-    url = "https://generativelanguage.googleapis.com/v1beta/models"
-    headers = {"X-goog-api-key": GEMINI_API_KEY}
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(url, headers=headers, timeout=10) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    available = []
-                    for m in data.get("models", []):
-                        name = m.get("name", "").replace("models/", "")
-                        if "flash" in name:
-                            available.append(name)
-                    if available:
-                        available.sort(key=lambda x: 0 if "2.5" in x or "2.0" in x else 1)
-                        MODELS_POOL = available
-                        logging.info("Актуальный пул моделей Gemini: %s", MODELS_POOL[:5])
-        except Exception as e:
-            logging.warning("Не удалось обновить пул моделей: %s", e)
+    logging.info("Используется проверенный пул Gemini: %s", MODELS_POOL)
+
+
+def extract_gemini_text(data: dict) -> str | None:
+    """Return only complete text responses; reject empty or truncated candidates."""
+    candidates = data.get("candidates") or []
+    if not candidates:
+        return None
+    candidate = candidates[0]
+    if candidate.get("finishReason") not in ("STOP",):
+        return None
+    parts = (candidate.get("content") or {}).get("parts") or []
+    chunks = [part.get("text", "") for part in parts if isinstance(part, dict)]
+    result = "".join(chunks).strip()
+    return result or None
 
 
 async def call_gemini_rest(contents_list, use_system=True):
+    if not GEMINI_API_KEY:
+        logging.warning("Gemini: API-ключ не настроен.")
+        return None
+
     headers = {"Content-Type": "application/json", "X-goog-api-key": GEMINI_API_KEY}
-    payload = {"contents": contents_list, "generationConfig": {"temperature": 0.7}}
+    payload = {
+        "contents": contents_list,
+        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 2048},
+    }
     if use_system:
         payload["systemInstruction"] = {"parts": [{"text": SYSTEM_PROMPT}]}
 
-    async with aiohttp.ClientSession() as session:
+    timeout = aiohttp.ClientTimeout(total=35, connect=10)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         for model_name in MODELS_POOL:
             url = (
                 "https://generativelanguage.googleapis.com/v1beta/models/"
@@ -368,19 +373,26 @@ async def call_gemini_rest(contents_list, use_system=True):
                 + ":generateContent"
             )
             try:
-                async with session.post(
-                    url, headers=headers, json=payload, timeout=25
-                ) as resp:
+                async with session.post(url, headers=headers, json=payload) as resp:
                     if resp.status == 200:
                         data = await resp.json()
-                        text = data["candidates"][0]["content"]["parts"][0]["text"]
-                        return text.replace("**", "")
+                        result = extract_gemini_text(data)
+                        if result:
+                            logging.info("Gemini: ответ получен от %s.", model_name)
+                            return result.replace("**", "")
+                        logging.warning(
+                            "Gemini %s: пустой или незавершённый ответ; пробую следующую модель.",
+                            model_name,
+                        )
                     else:
-                        err_body = await resp.text()
-                        logging.warning("Модель %s вернула %s: %s", model_name, resp.status, err_body)
-            except Exception as e:
-                logging.warning("Ошибка соединения с %s: %s", model_name, e)
+                        # Do not log response bodies: they may contain request or account details.
+                        logging.warning("Gemini %s вернула HTTP %s.", model_name, resp.status)
+            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                logging.warning("Gemini %s: ошибка сети (%s).", model_name, type(exc).__name__)
+            except (ValueError, KeyError, TypeError) as exc:
+                logging.warning("Gemini %s: некорректный ответ (%s).", model_name, type(exc).__name__)
             await asyncio.sleep(0.4)
+    logging.error("Gemini: все проверенные модели недоступны или вернули неполный ответ.")
     return None
 
 
@@ -883,6 +895,75 @@ async def send_photo_fast(message: Message, caption: str, reply_markup):
         )
 
 
+def split_telegram_text(text: str, max_length: int = 4000) -> list[str]:
+    """Split long posts into Telegram-safe chunks, preferring paragraph boundaries."""
+    remaining = text.strip()
+    chunks = []
+    while len(remaining) > max_length:
+        cut = remaining.rfind("\n\n", 0, max_length + 1)
+        if cut < max_length // 2:
+            cut = remaining.rfind("\n", 0, max_length + 1)
+        if cut < max_length // 2:
+            cut = remaining.rfind(" ", 0, max_length + 1)
+        if cut <= 0:
+            cut = max_length
+        chunk = remaining[:cut].strip()
+        if not chunk:
+            cut = max_length
+            chunk = remaining[:cut]
+        chunks.append(chunk)
+        remaining = remaining[cut:].strip()
+    if remaining:
+        chunks.append(remaining)
+    return chunks
+
+
+async def publish_blog_to_telegram(bot: Bot, chat_id, text: str, img_path: str | None = None) -> bool:
+    """Publish a post without letting a photo/caption failure suppress the text."""
+    success = True
+    caption_sent = False
+
+    if img_path and os.path.exists(img_path):
+        try:
+            photo = FSInputFile(img_path)
+            if len(text) <= 1024:
+                await bot.send_photo(
+                    chat_id=chat_id,
+                    photo=photo,
+                    caption=text,
+                    reply_markup=get_blog_post_kb(),
+                )
+                caption_sent = True
+            else:
+                await bot.send_photo(chat_id=chat_id, photo=photo)
+        except Exception as exc:
+            success = False
+            logging.warning("Не удалось отправить изображение блога в Telegram (%s).", type(exc).__name__)
+
+    if not caption_sent:
+        chunks = split_telegram_text(text)
+        for index, chunk in enumerate(chunks):
+            try:
+                await bot.send_message(
+                    chat_id=chat_id,
+                    text=chunk,
+                    reply_markup=get_blog_post_kb() if index == len(chunks) - 1 else None,
+                    disable_web_page_preview=True,
+                )
+            except Exception as exc:
+                success = False
+                logging.error(
+                    "Не удалось отправить часть %s/%s поста в Telegram (%s).",
+                    index + 1, len(chunks), type(exc).__name__,
+                )
+
+    if success:
+        logging.info("Пост блога отправлен в Telegram.")
+    else:
+        logging.warning("Публикация поста в Telegram завершилась частично или с ошибкой.")
+    return success
+
+
 async def generate_blog_article() -> str:
     topic = random.choice(BLOG_TOPICS)
     prompt = (
@@ -1158,32 +1239,19 @@ async def cmd_publish_blog_now(message: Message, bot: Bot):
         else message.from_user.id
     )
 
-    # 1. Отправляем в Telegram
+    # 1. Telegram publication is isolated from VK publication.
     img_path = get_tg_blog_image_by_index(current_idx)
-    if img_path and os.path.exists(img_path):
-        photo = FSInputFile(img_path)
-        if len(tg_article) <= 1024:
-            await bot.send_photo(
-                chat_id=target_chat,
-                photo=photo,
-                caption=tg_article,
-                reply_markup=get_blog_post_kb(),
-            )
-        else:
-            await bot.send_photo(chat_id=target_chat, photo=photo)
-            await bot.send_message(
-                chat_id=target_chat,
-                text=tg_article,
-                reply_markup=get_blog_post_kb(),
-            )
-    else:
-        await bot.send_message(
-            chat_id=target_chat, text=tg_article, reply_markup=get_blog_post_kb()
-        )
+    try:
+        await publish_blog_to_telegram(bot, target_chat, tg_article, img_path)
+    except Exception as exc:
+        logging.warning("Сбой отправки блога в Telegram (%s).", type(exc).__name__)
 
-    # 2. Публикуем в группу ВК напрямую на витрину github.io
-    async with aiohttp.ClientSession() as session:
-        await publish_vk_wall_post(session, vk_article, current_idx=current_idx)
+    # 2. Always attempt VK, even if Telegram delivery failed.
+    try:
+        async with aiohttp.ClientSession() as session:
+            await publish_vk_wall_post(session, vk_article, current_idx=current_idx)
+    except Exception as exc:
+        logging.warning("Не удалось опубликовать пост блога в VK (%s).", type(exc).__name__)
 
 
 @dp.message(CommandStart())
@@ -1614,33 +1682,26 @@ async def auto_blog_scheduler(bot: Bot):
 
             img_path = get_tg_blog_image_by_index(current_idx)
 
-            if img_path and os.path.exists(img_path):
-                photo = FSInputFile(img_path)
-                if len(tg_article) <= 1024:
-                    await bot.send_photo(
-                        chat_id=GROUP_USERNAME,
-                        photo=photo,
-                        caption=tg_article,
-                        reply_markup=get_blog_post_kb(),
-                    )
-                else:
-                    await bot.send_photo(chat_id=GROUP_USERNAME, photo=photo)
-                    await bot.send_message(
-                        chat_id=GROUP_USERNAME,
-                        text=tg_article,
-                        reply_markup=get_blog_post_kb(),
-                    )
-            else:
-                await bot.send_message(
-                    chat_id=GROUP_USERNAME,
-                    text=tg_article,
-                    reply_markup=get_blog_post_kb(),
+            try:
+                tg_ok = await publish_blog_to_telegram(
+                    bot, GROUP_USERNAME, tg_article, img_path
+                )
+            except Exception as exc:
+                tg_ok = False
+                logging.warning("Telegram blog delivery failed (%s).", type(exc).__name__)
+
+            # VK must be attempted independently of Telegram's result.
+            try:
+                async with aiohttp.ClientSession() as session:
+                    await publish_vk_wall_post(session, vk_article, current_idx=current_idx)
+            except Exception as exc:
+                logging.warning(
+                    "Не удалось опубликовать ежедневный пост в VK (%s).",
+                    type(exc).__name__,
                 )
 
-            logging.info("Ежедневный пост блога опубликован в Telegram!")
-
-            async with aiohttp.ClientSession() as session:
-                await publish_vk_wall_post(session, vk_article, current_idx=current_idx)
+            if tg_ok:
+                logging.info("Ежедневный пост блога отправлен в Telegram.")
 
         except Exception as e:
             logging.warning("Ошибка авто-публикации блога: %s", e)
@@ -1773,3 +1834,5 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         logging.info("Бот остановлен пользователем.")
+
+[executed on device: WIN-G67FBDK95CQ (1e199238-2864-4f34-94f1-59ce3e582cf2)]
