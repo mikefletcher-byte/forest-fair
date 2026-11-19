@@ -75,5 +75,3 @@ class TelegramPublishingTests(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-[executed on device: WIN-G67FBDK95CQ (1e199238-2864-4f34-94f1-59ce3e582cf2)]
