@@ -112,9 +112,15 @@ jobs:
             systemctl restart forestbot
             sleep 3
             if ! systemctl is-active --quiet forestbot; then rollback; exit 1; fi
-            status=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 https://api.forest-fair.ru:8443/api/auth/me || true)
+            status=""
+            for attempt in $(seq 1 15); do
+              status=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 https://api.forest-fair.ru:8443/api/auth/me || true)
+              if test "$status" = "401"; then break; fi
+              echo "API is not ready yet (attempt $attempt/15, HTTP $status); waiting 2 seconds"
+              sleep 2
+            done
             if test "$status" != "401"; then
-              echo "API health check returned HTTP $status; expected 401 without a Bearer token"
+              echo "API health check returned HTTP $status after retries; expected 401 without a Bearer token"
               rollback
               exit 1
             fi
