@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - integration/unified-auth-main
+      - feature/auth-provider-oidc
   pull_request:
     branches:
       - main

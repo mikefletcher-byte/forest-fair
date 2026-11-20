@@ -1,5 +1,6 @@
 -- Forest Fair unified authentication schema
--- Migration 001. This file defines the schema only; it does not modify production data.
+-- Schema version 2 (base unified auth plus Telegram OIDC tables).
+-- Applied additively; this file does not modify or delete production records.
 -- Timestamps are Unix seconds in UTC.
 
 PRAGMA foreign_keys = ON;
@@ -74,4 +75,33 @@ CREATE TABLE IF NOT EXISTS auth_events (
 CREATE INDEX IF NOT EXISTS idx_auth_events_user_time
     ON auth_events(user_id, created_at DESC);
 
-PRAGMA user_version = 1;
+-- Short-lived OIDC state, nonce and PKCE transactions. Raw state/nonce are never stored.
+CREATE TABLE IF NOT EXISTS oidc_transactions (
+    state_hash TEXT PRIMARY KEY,
+    nonce_hash TEXT NOT NULL,
+    code_verifier TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    consumed_at INTEGER,
+    CHECK (expires_at > created_at)
+);
+
+CREATE INDEX IF NOT EXISTS idx_oidc_transactions_expiry
+    ON oidc_transactions(expires_at, consumed_at);
+
+-- One-time handoff from the OIDC callback to the storefront browser.
+-- Only the ticket hash is stored; the session is created at ticket exchange.
+CREATE TABLE IF NOT EXISTS auth_login_tickets (
+    ticket_hash TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    consumed_at INTEGER,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    CHECK (expires_at > created_at)
+);
+
+CREATE INDEX IF NOT EXISTS idx_auth_login_tickets_expiry
+    ON auth_login_tickets(expires_at, consumed_at);
+
+PRAGMA user_version = 2;

@@ -9,6 +9,8 @@ on:
       - auth_store.py
       - auth_email.py
       - telegram_auth.py
+      - telegram_oidc.py
+      - requirements.txt
       - test_telegram_auth.py
       - auth_schema.sql
       - .github/workflows/deploy-vps.yml
@@ -20,6 +22,7 @@ on:
       - auth_store.py
       - auth_email.py
       - telegram_auth.py
+      - telegram_oidc.py
       - test_telegram_auth.py
       - auth_schema.sql
       - requirements.txt
@@ -46,7 +49,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install API runtime dependencies
-        run: python -m pip install aiohttp "aiogram>=3,<4" "cryptography>=50,<51"
+        run: python -m pip install -r requirements.txt
       - name: Run tests
         run: python -m unittest discover -v
 
@@ -78,30 +81,35 @@ jobs:
       - name: Upload server files to staging directory
         run: |
           ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=yes root@89.22.228.22 'mkdir -p /root/forest-fair-deploy-staging && chmod 700 /root/forest-fair-deploy-staging'
-          scp -i ~/.ssh/id_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=yes bot.py auth_api.py auth_store.py auth_email.py telegram_auth.py auth_schema.sql root@89.22.228.22:/root/forest-fair-deploy-staging/
+          scp -i ~/.ssh/id_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=yes bot.py auth_api.py auth_store.py auth_email.py telegram_auth.py telegram_oidc.py auth_schema.sql root@89.22.228.22:/root/forest-fair-deploy-staging/
       - name: Backup, install patched cryptography, restart and verify
         run: |
           ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=yes root@89.22.228.22 'set -eu
             backup_dir="/root/forest-fair-backups/crypto-$(date -u +%Y%m%dT%H%M%SZ)"
             install -d -m 700 "$backup_dir"
-            for file in bot.py auth_api.py auth_store.py auth_email.py telegram_auth.py auth_schema.sql; do
+            for file in bot.py auth_api.py auth_store.py auth_email.py telegram_auth.py telegram_oidc.py auth_schema.sql; do
               if test -f "/root/$file"; then cp -a "/root/$file" "$backup_dir/"; fi
             done
             /root/venv/bin/python -m pip freeze > "$backup_dir/pip-freeze-before.txt"
             /root/venv/bin/python -m pip download --disable-pip-version-check --only-binary=:all: --no-deps "cryptography==46.0.7" -d "$backup_dir"
             cd /root/forest-fair-deploy-staging
-            for file in bot.py auth_api.py auth_store.py auth_email.py telegram_auth.py auth_schema.sql; do
+            for file in bot.py auth_api.py auth_store.py auth_email.py telegram_auth.py telegram_oidc.py auth_schema.sql; do
               test -s "$file"
               install -m 600 "$file" "/root/$file"
             done
             rollback() {
-              echo "Deployment verification failed; restoring cryptography 46.0.7"
+              echo "Deployment verification failed; restoring application files and cryptography 46.0.7"
+              for file in bot.py auth_api.py auth_store.py auth_email.py telegram_auth.py telegram_oidc.py auth_schema.sql; do
+                if test -f "$backup_dir/$file"; then
+                  install -m 600 "$backup_dir/$file" "/root/$file"
+                fi
+              done
               /root/venv/bin/python -m pip install --disable-pip-version-check --no-index --find-links "$backup_dir" "cryptography==46.0.7"
               systemctl restart forestbot
               sleep 3
               systemctl is-active --quiet forestbot
             }
-            if ! /root/venv/bin/python -m pip install --disable-pip-version-check "cryptography>=50,<51"; then
+            if ! /root/venv/bin/python -m pip install --disable-pip-version-check "PyJWT>=2.10,<3" "cryptography>=50,<51"; then
               rollback
               exit 1
             fi

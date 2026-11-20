@@ -314,6 +314,266 @@ class AuthStore:
             )
         return cursor.rowcount
 
+    def get_or_create_user_for_telegram_oidc(
+        self, telegram_user_id: int, subject: str
+    ) -> tuple[int, bool]:
+        """Resolve Telegram's signed profile id and OIDC sub to one account.
+
+        Telegram documents profile.id as the Telegram user ID, while sub is a
+        distinct OIDC subject. Both claims must come from a verified ID token.
+        Never merge identities that already belong to different accounts.
+        """
+        telegram_provider, telegram_id = self.normalize_identity(
+            "telegram", telegram_user_id
+        )
+        oidc_provider, oidc_subject = self.normalize_identity(
+            "telegram_oidc", subject
+        )
+        if not telegram_id.isdigit() or int(telegram_id) <= 0:
+            raise ValueError("invalid Telegram user id")
+
+        now = int(time.time())
+        identities = (
+            (telegram_provider, telegram_id),
+            (oidc_provider, oidc_subject),
+        )
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            rows = conn.execute(
+                """
+                SELECT provider, provider_id, user_id
+                FROM auth_links
+                WHERE (provider = ? AND provider_id = ?)
+                   OR (provider = ? AND provider_id = ?)
+                """,
+                (telegram_provider, telegram_id, oidc_provider, oidc_subject),
+            ).fetchall()
+            owners = {int(row["user_id"]) for row in rows}
+            if len(owners) > 1:
+                raise IdentityAlreadyLinked(
+                    "Telegram OIDC identity conflicts with an existing account"
+                )
+
+            created = not owners
+            if created:
+                cursor = conn.execute(
+                    "INSERT INTO users (created_at, updated_at, is_active) VALUES (?, ?, 1)",
+                    (now, now),
+                )
+                user_id = int(cursor.lastrowid)
+                conn.execute(
+                    """
+                    INSERT INTO auth_events (user_id, event_type, provider, created_at)
+                    VALUES (?, 'account_created', ?, ?)
+                    """,
+                    (user_id, oidc_provider, now),
+                )
+            else:
+                user_id = owners.pop()
+                user = conn.execute(
+                    "SELECT is_active FROM users WHERE user_id = ?", (user_id,)
+                ).fetchone()
+                if not user or not user["is_active"]:
+                    raise InactiveUser("Forest Fair account is inactive")
+
+            existing = {
+                (row["provider"], row["provider_id"]) for row in rows
+            }
+            for provider, provider_id in identities:
+                if (provider, provider_id) not in existing:
+                    conn.execute(
+                        """
+                        INSERT INTO auth_links
+                            (user_id, provider, provider_id, created_at, verified_at)
+                        VALUES (?, ?, ?, ?, ?)
+                        """,
+                        (user_id, provider, provider_id, now, now),
+                    )
+                    if not created:
+                        conn.execute(
+                            """
+                            INSERT INTO auth_events
+                                (user_id, event_type, provider, created_at)
+                            VALUES (?, 'identity_linked', ?, ?)
+                            """,
+                            (user_id, provider, now),
+                        )
+
+            conn.execute(
+                "UPDATE users SET updated_at = ? WHERE user_id = ?",
+                (now, user_id),
+            )
+            conn.commit()
+            return user_id, created
+
+    def create_oidc_transaction(
+        self,
+        state: str,
+        nonce: str,
+        code_verifier: str,
+        lifetime_seconds: int = 600,
+    ) -> None:
+        """Persist a short-lived OIDC transaction without storing raw state/nonce."""
+        if not isinstance(state, str) or not 20 <= len(state) <= 256:
+            raise ValueError("invalid OIDC state")
+        if not isinstance(nonce, str) or not 20 <= len(nonce) <= 256:
+            raise ValueError("invalid OIDC nonce")
+        if not isinstance(code_verifier, str) or not 43 <= len(code_verifier) <= 128:
+            raise ValueError("invalid PKCE verifier")
+        if not 60 <= int(lifetime_seconds) <= 900:
+            raise ValueError("invalid OIDC transaction lifetime")
+
+        now = int(time.time())
+        state_hash = hashlib.sha256(state.encode("utf-8")).hexdigest()
+        nonce_hash = hashlib.sha256(nonce.encode("utf-8")).hexdigest()
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute(
+                "DELETE FROM oidc_transactions WHERE expires_at < ?",
+                (now - 86400,),
+            )
+            conn.execute(
+                """
+                INSERT INTO oidc_transactions
+                    (state_hash, nonce_hash, code_verifier, created_at, expires_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (state_hash, nonce_hash, code_verifier, now, now + int(lifetime_seconds)),
+            )
+            conn.commit()
+
+    def consume_oidc_transaction(
+        self, state: str, *, now: int | None = None
+    ) -> dict[str, Any] | None:
+        """Atomically consume an unexpired OIDC state exactly once."""
+        if not isinstance(state, str) or not state or len(state) > 256:
+            return None
+        timestamp = int(time.time()) if now is None else int(now)
+        state_hash = hashlib.sha256(state.encode("utf-8")).hexdigest()
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                """
+                SELECT nonce_hash, code_verifier, created_at, expires_at
+                FROM oidc_transactions
+                WHERE state_hash = ? AND consumed_at IS NULL AND expires_at > ?
+                """,
+                (state_hash, timestamp),
+            ).fetchone()
+            if not row:
+                conn.rollback()
+                return None
+            cursor = conn.execute(
+                """
+                UPDATE oidc_transactions SET consumed_at = ?
+                WHERE state_hash = ? AND consumed_at IS NULL AND expires_at > ?
+                """,
+                (timestamp, state_hash, timestamp),
+            )
+            if cursor.rowcount != 1:
+                conn.rollback()
+                return None
+            conn.commit()
+            return dict(row)
+
+    def create_login_ticket(
+        self, user_id: int, lifetime_seconds: int = 180
+    ) -> str:
+        """Create a short-lived one-time browser handoff ticket."""
+        if not 60 <= int(lifetime_seconds) <= 300:
+            raise ValueError("invalid login ticket lifetime")
+        now = int(time.time())
+        ticket = secrets.token_urlsafe(32)
+        ticket_hash = self._token_hash(ticket)
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute(
+                "DELETE FROM auth_login_tickets WHERE expires_at < ?",
+                (now - 86400,),
+            )
+            user = conn.execute(
+                "SELECT is_active FROM users WHERE user_id = ?", (user_id,)
+            ).fetchone()
+            if not user or not user["is_active"]:
+                raise InactiveUser("Forest Fair account is unavailable")
+            conn.execute(
+                """
+                INSERT INTO auth_login_tickets
+                    (ticket_hash, user_id, created_at, expires_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (ticket_hash, user_id, now, now + int(lifetime_seconds)),
+            )
+            conn.commit()
+        return ticket
+
+    def consume_login_ticket_and_create_session(
+        self,
+        ticket: str,
+        *,
+        device_label: str | None = None,
+        now: int | None = None,
+        lifetime_seconds: int = 30 * 24 * 60 * 60,
+    ) -> tuple[int, str, int] | None:
+        """Consume a one-time browser ticket and issue a session atomically."""
+        if not isinstance(ticket, str) or not ticket or len(ticket) > 256:
+            return None
+        timestamp = int(time.time()) if now is None else int(now)
+        if lifetime_seconds < 60:
+            raise ValueError("session lifetime must be at least 60 seconds")
+        ticket_hash = self._token_hash(ticket)
+        token = secrets.token_urlsafe(32)
+        expires_at = timestamp + int(lifetime_seconds)
+        label = str(device_label)[:200] or None if device_label else None
+
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                """
+                SELECT user_id FROM auth_login_tickets
+                WHERE ticket_hash = ? AND consumed_at IS NULL AND expires_at > ?
+                """,
+                (ticket_hash, timestamp),
+            ).fetchone()
+            if not row:
+                conn.rollback()
+                return None
+            user_id = int(row["user_id"])
+            user = conn.execute(
+                "SELECT is_active FROM users WHERE user_id = ?", (user_id,)
+            ).fetchone()
+            if not user or not user["is_active"]:
+                conn.rollback()
+                return None
+            cursor = conn.execute(
+                """
+                UPDATE auth_login_tickets SET consumed_at = ?
+                WHERE ticket_hash = ? AND consumed_at IS NULL AND expires_at > ?
+                """,
+                (timestamp, ticket_hash, timestamp),
+            )
+            if cursor.rowcount != 1:
+                conn.rollback()
+                return None
+            cursor = conn.execute(
+                """
+                INSERT INTO sessions
+                    (user_id, token_hash, created_at, expires_at, last_used_at, device_label)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (user_id, self._token_hash(token), timestamp, expires_at, timestamp, label),
+            )
+            session_id = int(cursor.lastrowid)
+            conn.execute(
+                """
+                INSERT INTO auth_events (user_id, event_type, created_at)
+                VALUES (?, 'session_created', ?)
+                """,
+                (user_id, timestamp),
+            )
+            conn.commit()
+        return session_id, token, expires_at
+
     def record_event(
         self, event_type: str, user_id: int | None = None,
         provider: str | None = None, details: dict[str, Any] | None = None,

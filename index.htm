@@ -1247,7 +1247,7 @@
         </div>
     </div>
 
-    <script src="./auth-client.js?v=auth-20261120-domain-1"></script>
+    <script src="./auth-client.js?v=auth-oidc-20261121-1"></script>
     <script>
         var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
         if (tg) { tg.expand(); }
@@ -1999,22 +1999,17 @@
             var tgWebApp = tgRoot && tgRoot.WebApp;
             var initData = tgWebApp && typeof tgWebApp.initData === "string" ? tgWebApp.initData : "";
             if (!tgWebApp || !initData) {
-                var diagnostics = [
-                    "Вход не запущен: Telegram не передал initData.",
-                    "SDK=" + (tgRoot ? "loaded" : "missing"),
-                    "WebApp=" + (tgWebApp ? "available" : "missing"),
-                    "initDataLength=" + initData.length,
-                    "platform=" + (tgWebApp && tgWebApp.platform ? tgWebApp.platform : "unknown"),
-                    "version=" + (tgWebApp && tgWebApp.version ? tgWebApp.version : "unknown")
-                ].join(" | ");
-                m.textContent = diagnostics;
-                console.warn("Forest Fair Telegram WebApp diagnostics", {
-                    sdkLoaded: Boolean(tgRoot),
-                    webAppAvailable: Boolean(tgWebApp),
-                    initDataLength: initData.length,
-                    platform: tgWebApp && tgWebApp.platform ? tgWebApp.platform : null,
-                    version: tgWebApp && tgWebApp.version ? tgWebApp.version : null
-                });
+                b.disabled = true;
+                m.textContent = "Перенаправляем на защищённую страницу входа Telegram.";
+                try {
+                    if (window.ffPendingCheckout) {
+                        window.sessionStorage.setItem("ff_pending_checkout", "1");
+                    }
+                    ForestFairAuth.startTelegramOIDC();
+                } catch (e) {
+                    b.disabled = false;
+                    m.textContent = e.message || "Не удалось начать вход через Telegram.";
+                }
                 return;
             }
             b.disabled=true; m.textContent="Подтверждаем вход на сервере.";
@@ -2033,6 +2028,26 @@
         async function restoreAuthState() {
             var tgWebApp = window.Telegram && window.Telegram.WebApp;
             if (tgWebApp && typeof tgWebApp.ready === "function") tgWebApp.ready();
+
+            try {
+                var oidcUser = await ForestFairAuth.completeTelegramOIDCRedirect();
+                if (oidcUser) {
+                    window.ffAuthError = "";
+                    if (window.sessionStorage.getItem("ff_pending_checkout") === "1") {
+                        window.sessionStorage.removeItem("ff_pending_checkout");
+                        window.ffPendingCheckout = true;
+                    }
+                    setAuthUi(oidcUser);
+                    if (window.ffPendingCheckout) {
+                        window.ffPendingCheckout = false;
+                        closeAuthModal();
+                        openCheckoutModal();
+                    }
+                    return;
+                }
+            } catch (error) {
+                window.ffAuthError = error.message || "Не удалось выполнить вход через Telegram.";
+            }
 
             if (ForestFairAuth.isSignedIn()) {
                 try {
