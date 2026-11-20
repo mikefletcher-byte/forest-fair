@@ -88,8 +88,14 @@ jobs:
               sleep 3
               systemctl is-active --quiet forestbot
             }
-            /root/venv/bin/python -m pip install --disable-pip-version-check "cryptography>=50,<51"
-            /root/venv/bin/python -c "import cryptography; from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey; print(cryptography.__version__); k=Ed25519PrivateKey.generate(); m=bytes([70,70]); k.public_key().verify(k.sign(m),m)"
+            if ! /root/venv/bin/python -m pip install --disable-pip-version-check "cryptography>=50,<51"; then
+              rollback
+              exit 1
+            fi
+            if ! /root/venv/bin/python -c "import cryptography; from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey; print(cryptography.__version__); k=Ed25519PrivateKey.generate(); m=bytes([70,70]); k.public_key().verify(k.sign(m),m)"; then
+              rollback
+              exit 1
+            fi
             systemctl restart forestbot
             sleep 3
             if ! systemctl is-active --quiet forestbot; then rollback; exit 1; fi
