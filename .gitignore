@@ -1,0 +1,73 @@
+# Environment files and credentials
+.env
+.env.*
+!.env.example
+*.env
+
+# Local secrets and key material
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+id_rsa
+id_ed25519
+id_ecdsa
+.ssh/
+secrets/
+credentials/
+token.txt
+tg_token.txt
+vk_token.txt
+key.txt
+*_token.txt
+*_secret.txt
+*_credentials.*
+
+# Local databases and customer/order data
+*.sqlite
+*.sqlite3
+*.db
+auth.db
+auth.sqlite3
+orders.json
+reminders.json
+manager_id.txt
+admin_id.txt
+
+# Logs and runtime output
+*.log
+logs/
+*.log.*
+*.pid
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.venv/
+venv/
+env/
+ENV/
+
+# Local editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files and backups
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
