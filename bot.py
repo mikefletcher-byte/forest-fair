@@ -63,7 +63,7 @@ CANDIDATE_PICS_DIRS = [
 
 BLOG_INDEX_FILE = os.path.join(BASE_DIR, "blog_pic_index.txt")
 
-WEBAPP_URL = "https://mikefletcher-byte.github.io/forest-fair/"
+WEBAPP_URL = "https://forest-fair.ru/"
 TG_SHOP_LINK = "https://t.me/ForestFairTomsk_bot?start=shop"
 MANAGER_USERNAME = "MBarukh"
 GROUP_USERNAME = "@ForestFair70"
@@ -314,7 +314,7 @@ SYSTEM_PROMPT = """
 • Пуэр Ся-То — 600 ₽ (50 г)
 
 УСЛОВИЯ ДОСТАВКИ И АКЦИИ:
-- Витрина магазина с выбором веса: оформляй ссылку СТРОГО через HTML: <a href='https://mikefletcher-byte.github.io/forest-fair/'>Онлайн-витрина «Forest Fair»</a>
+- Витрина магазина с выбором веса: оформляй ссылку СТРОГО через HTML: <a href='https://forest-fair.ru/'>Онлайн-витрина «Forest Fair»</a>
 - Способы получения: Курьером / Доставка (500 ₽, а при заказе от 5 000 ₽ — БЕСПЛАТНО!) или Самовывоз в г. Томск.
 - Оплата: Переводом или Наличными.
 - Промокод FOREST10 дает скидку 10% на любую продукцию!
@@ -1366,12 +1366,25 @@ async def consultant_handler(message: Message, bot: Bot):
 # =====================================================================
 # ВЕБ-ПРИЕМНИК ЗАКАЗОВ (HTTPS)
 # =====================================================================
-CORS_HEADERS = {
-    "Access-Control-Allow-Origin": "https://mikefletcher-byte.github.io",
+CORS_ALLOWED_ORIGINS = frozenset({
+    "https://forest-fair.ru",
+    "https://www.forest-fair.ru",
+    "https://mikefletcher-byte.github.io",
+})
+CORS_BASE_HEADERS = {
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Vary": "Origin",
 }
+
+
+def cors_headers(request: web.Request) -> dict:
+    """Return CORS headers only for the storefront's trusted origins."""
+    headers = dict(CORS_BASE_HEADERS)
+    origin = request.headers.get("Origin", "")
+    if origin in CORS_ALLOWED_ORIGINS:
+        headers["Access-Control-Allow-Origin"] = origin
+    return headers
 
 
 async def handle_telegram_auth(request: web.Request):
@@ -1380,7 +1393,7 @@ async def handle_telegram_auth(request: web.Request):
         return web.json_response(
             {"ok": False, "error": "telegram_auth_unavailable"},
             status=503,
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
     try:
         if request.content_length is not None and request.content_length > 16_384:
@@ -1408,33 +1421,33 @@ async def handle_telegram_auth(request: web.Request):
                 "account_created": created,
                 "session_id": session_id,
             },
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
     except TelegramInitDataError as exc:
         logging.warning("Telegram initData verification failed: %s", exc)
         return web.json_response(
             {"ok": False, "error": "telegram_auth_failed"},
             status=401,
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
     except InactiveUser:
         return web.json_response(
             {"ok": False, "error": "account_unavailable"},
             status=403,
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
     except (json.JSONDecodeError, UnicodeDecodeError):
         return web.json_response(
             {"ok": False, "error": "invalid_request"},
             status=400,
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
     except Exception:
         logging.exception("Ошибка Telegram-аутентификации")
         return web.json_response(
             {"ok": False, "error": "authentication_unavailable"},
             status=500,
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
 
 
@@ -1448,7 +1461,7 @@ async def handle_auth_me(request: web.Request):
         return web.json_response(
             {"ok": False, "error": "unauthorized"},
             status=401,
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
     return web.json_response(
         {
@@ -1461,7 +1474,7 @@ async def handle_auth_me(request: web.Request):
                 "device_label": session["device_label"],
             },
         },
-        headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        headers={**cors_headers(request), "Cache-Control": "no-store"},
     )
 
 
@@ -1475,19 +1488,19 @@ async def handle_auth_logout(request: web.Request):
         return web.json_response(
             {"ok": False, "error": "unauthorized"},
             status=401,
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
     revoked = auth_store.revoke_session(
         int(session["user_id"]), int(session["session_id"])
     )
     return web.json_response(
         {"ok": bool(revoked)},
-        headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+        headers={**cors_headers(request), "Cache-Control": "no-store"},
     )
 
 
 async def handle_options(request: web.Request):
-    return web.Response(status=200, headers=CORS_HEADERS)
+    return web.Response(status=200, headers=cors_headers(request))
 
 
 async def handle_external_order(request: web.Request):
@@ -1499,7 +1512,7 @@ async def handle_external_order(request: web.Request):
         return web.json_response(
             {"ok": False, "error": "unauthorized"},
             status=401,
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
 
     bot: Bot = request.app["bot"]
@@ -1532,20 +1545,20 @@ async def handle_external_order(request: web.Request):
         await send_manager_alerts(bot, manager_notification, kb)
         return web.json_response(
             {"ok": True, "order": saved_order},
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
     except (json.JSONDecodeError, UnicodeDecodeError, ValueError, AttributeError):
         return web.json_response(
             {"ok": False, "error": "invalid_order"},
             status=400,
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
     except Exception:
         logging.exception("Ошибка приема авторизованного заказа")
         return web.json_response(
             {"ok": False, "error": "order_unavailable"},
             status=500,
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
 
 
@@ -1558,7 +1571,7 @@ async def handle_get_orders(request: web.Request):
         return web.json_response(
             {"ok": False, "error": "unauthorized"},
             status=401,
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
 
     try:
@@ -1566,14 +1579,14 @@ async def handle_get_orders(request: web.Request):
         result = list_orders_for_user(orders, int(session["user_id"]))
         return web.json_response(
             {"ok": True, "orders": result},
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
     except Exception:
         logging.exception("Ошибка получения заказов аккаунта")
         return web.json_response(
             {"ok": False, "error": "orders_unavailable"},
             status=500,
-            headers={**CORS_HEADERS, "Cache-Control": "no-store"},
+            headers={**cors_headers(request), "Cache-Control": "no-store"},
         )
 
 
@@ -1772,7 +1785,7 @@ async def vk_long_poll_listener(bot: Bot):
                             if not clean_reply:
                                 clean_reply = (
                                     "Здравствуйте! Рад помочь вам. Подробный каталог с расчетом веса доступен в нашей витрине: "
-                                    "mikefletcher-byte.github.io/forest-fair/\n"
+                                    "forest-fair.ru/\n"
                                     "Или напишите менеджеру Матвею: +7(996)-636-45-66 (Telegram: @MBarukh)"
                                 )
                             else:
