@@ -6,7 +6,7 @@
 (() => {
   "use strict";
 
-  const API_BASE = "https://89.22.228.22.nip.io";
+  const API_BASE = "https://api.forest-fair.ru:8443";
   const TOKEN_KEY = "forestfair_session_token";
   const SESSION_KEY = "forestfair_session_meta";
 
