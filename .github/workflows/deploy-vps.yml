@@ -12,6 +12,18 @@ on:
       - test_telegram_auth.py
       - auth_schema.sql
       - .github/workflows/deploy-vps.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - bot.py
+      - auth_api.py
+      - auth_store.py
+      - auth_email.py
+      - telegram_auth.py
+      - test_telegram_auth.py
+      - auth_schema.sql
+      - requirements.txt
+      - .github/workflows/deploy-vps.yml
   workflow_dispatch:
 
 permissions:
@@ -24,17 +36,22 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
       - name: Install API runtime dependencies
-        run: python -m pip install aiohttp "aiogram>=3,<4" "cryptography>=42,<47"
+        run: python -m pip install aiohttp "aiogram>=3,<4" "cryptography>=50,<51"
       - name: Run tests
         run: python -m unittest discover -v
 
   deploy:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: test
     runs-on: ubuntu-latest
     environment: vps-production
@@ -62,17 +79,44 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=yes root@89.22.228.22 'mkdir -p /root/forest-fair-deploy-staging && chmod 700 /root/forest-fair-deploy-staging'
           scp -i ~/.ssh/id_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=yes bot.py auth_api.py auth_store.py auth_email.py telegram_auth.py auth_schema.sql root@89.22.228.22:/root/forest-fair-deploy-staging/
-      - name: Install, restart and verify
+      - name: Backup, install patched cryptography, restart and verify
         run: |
           ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=yes root@89.22.228.22 'set -eu
+            backup_dir="/root/forest-fair-backups/crypto-$(date -u +%Y%m%dT%H%M%SZ)"
+            install -d -m 700 "$backup_dir"
+            for file in bot.py auth_api.py auth_store.py auth_email.py telegram_auth.py auth_schema.sql; do
+              if test -f "/root/$file"; then cp -a "/root/$file" "$backup_dir/"; fi
+            done
+            /root/venv/bin/python -m pip freeze > "$backup_dir/pip-freeze-before.txt"
+            /root/venv/bin/python -m pip download --disable-pip-version-check --only-binary=:all: --no-deps "cryptography==46.0.7" -d "$backup_dir"
             cd /root/forest-fair-deploy-staging
             for file in bot.py auth_api.py auth_store.py auth_email.py telegram_auth.py auth_schema.sql; do
               test -s "$file"
               install -m 600 "$file" "/root/$file"
             done
-            /root/venv/bin/python -m pip install --disable-pip-version-check "cryptography>=42,<47"
+            rollback() {
+              echo "Deployment verification failed; restoring cryptography 46.0.7"
+              /root/venv/bin/python -m pip install --disable-pip-version-check --no-index --find-links "$backup_dir" "cryptography==46.0.7"
+              systemctl restart forestbot
+              sleep 3
+              systemctl is-active --quiet forestbot
+            }
+            if ! /root/venv/bin/python -m pip install --disable-pip-version-check "cryptography>=50,<51"; then
+              rollback
+              exit 1
+            fi
+            if ! /root/venv/bin/python -c "import cryptography; from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey; print(cryptography.__version__); k=Ed25519PrivateKey.generate(); m=bytes([70,70]); k.public_key().verify(k.sign(m),m)"; then
+              rollback
+              exit 1
+            fi
             systemctl restart forestbot
-            sleep 2
-            systemctl is-active --quiet forestbot
-            echo "forestbot active; deployment completed"
+            sleep 3
+            if ! systemctl is-active --quiet forestbot; then rollback; exit 1; fi
+            status=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 https://api.forest-fair.ru:8443/api/auth/me || true)
+            if test "$status" != "401"; then
+              echo "API health check returned HTTP $status; expected 401 without a Bearer token"
+              rollback
+              exit 1
+            fi
+            echo "forestbot active; cryptography upgrade and API health check passed"
           '
