@@ -12,6 +12,18 @@ on:
       - test_telegram_auth.py
       - auth_schema.sql
       - .github/workflows/deploy-vps.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - bot.py
+      - auth_api.py
+      - auth_store.py
+      - auth_email.py
+      - telegram_auth.py
+      - test_telegram_auth.py
+      - auth_schema.sql
+      - requirements.txt
+      - .github/workflows/deploy-vps.yml
   workflow_dispatch:
 
 permissions:
@@ -39,6 +51,7 @@ jobs:
         run: python -m unittest discover -v
 
   deploy:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: test
     runs-on: ubuntu-latest
     environment: vps-production
