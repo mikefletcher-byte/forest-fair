@@ -77,6 +77,45 @@
     return payload;
   }
 
+  function startTelegramOIDC() {
+    window.location.assign(API_BASE + "/api/auth/telegram/oidc/start");
+  }
+
+  async function completeTelegramOIDCRedirect() {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const ticket = params.get("telegram_oidc_ticket");
+    const error = params.get("telegram_oidc_error");
+    if (!ticket && !error) return null;
+
+    const clearRedirectFragment = () => {
+      window.history.replaceState(
+        null,
+        document.title,
+        window.location.pathname + window.location.search
+      );
+    };
+
+    if (error) {
+      clearRedirectFragment();
+      const messages = {
+        access_denied: "Вход через Telegram отменён.",
+        identity_conflict: "Не удалось безопасно связать Telegram с существующим аккаунтом. Обратитесь к поддержке.",
+        account_unavailable: "Аккаунт Forest Fair недоступен.",
+        login_failed: "Не удалось подтвердить вход через Telegram. Попробуйте ещё раз.",
+        temporarily_unavailable: "Сервис входа через Telegram временно недоступен."
+      };
+      throw new Error(messages[error] || "Не удалось выполнить вход через Telegram.");
+    }
+
+    const data = await request("/api/auth/telegram/oidc/exchange", {
+      method: "POST",
+      body: JSON.stringify({ ticket })
+    });
+    saveSession(data);
+    clearRedirectFragment();
+    return data.user;
+  }
+
   async function loginTelegram() {
     const initData = window.Telegram &&
       window.Telegram.WebApp &&
@@ -121,6 +160,8 @@
 
   window.ForestFairAuth = Object.freeze({
     loginTelegram,
+    startTelegramOIDC,
+    completeTelegramOIDCRedirect,
     me,
     logout,
     request,
