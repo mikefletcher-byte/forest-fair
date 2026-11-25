@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://forest-fair.ru/sitemap.xml
