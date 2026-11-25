@@ -7,6 +7,8 @@ import random
 import re
 import sys
 import time
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from aiogram import Bot, Dispatcher, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ChatAction, ChatType, ParseMode
@@ -1681,8 +1683,22 @@ async def customer_reminders_scheduler(bot: Bot):
 
 
 async def auto_blog_scheduler(bot: Bot):
+    tomsk_tz = ZoneInfo("Asia/Tomsk")
+    now = datetime.now(tomsk_tz)
+    next_run = now.replace(hour=12, minute=0, second=0, microsecond=0)
+    if next_run <= now:
+        next_run += timedelta(days=1)
+
+    logging.info(
+        "Планировщик авто-публикаций запущен. Следующая публикация: %s (Asia/Tomsk); далее каждые 3 дня.",
+        next_run.isoformat(),
+    )
+
     while True:
-        await asyncio.sleep(86400)
+        delay = (next_run - datetime.now(tomsk_tz)).total_seconds()
+        if delay > 0:
+            await asyncio.sleep(delay)
+
         try:
             article = await generate_blog_article()
             current_idx = get_and_advance_blog_index()
@@ -1709,15 +1725,21 @@ async def auto_blog_scheduler(bot: Bot):
                     await publish_vk_wall_post(session, vk_article, current_idx=current_idx)
             except Exception as exc:
                 logging.warning(
-                    "Не удалось опубликовать ежедневный пост в VK (%s).",
+                    "Не удалось опубликовать пост в VK (%s).",
                     type(exc).__name__,
                 )
 
             if tg_ok:
-                logging.info("Ежедневный пост блога отправлен в Telegram.")
+                logging.info("Пост блога отправлен в Telegram.")
 
         except Exception as e:
             logging.warning("Ошибка авто-публикации блога: %s", e)
+        finally:
+            next_run += timedelta(days=3)
+            logging.info(
+                "Следующая авто-публикация запланирована на %s (Asia/Tomsk).",
+                next_run.isoformat(),
+            )
 
 
 async def vk_long_poll_listener(bot: Bot):
