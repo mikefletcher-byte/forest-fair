@@ -306,6 +306,16 @@ class TelegramOIDCClient:
 
         subject = claims.get("sub")
         telegram_id = claims.get("id")
+        # Telegram profile.id is returned as a decimal string by its OIDC provider.
+        # Normalize only bounded ASCII decimal strings; reject all other shapes below.
+        if (
+            isinstance(telegram_id, str)
+            and telegram_id.isascii()
+            and telegram_id.isdecimal()
+            and len(telegram_id) <= 20
+        ):
+            telegram_id = int(telegram_id)
+            claims["id"] = telegram_id
         if (
             not isinstance(subject, str)
             or not subject
