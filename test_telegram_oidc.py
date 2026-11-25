@@ -170,11 +170,20 @@ class TelegramOIDCTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(TelegramOIDCError):
             await self.client.verify_id_token(token, self.nonce_hash)
 
+    async def test_accepts_numeric_string_telegram_profile_id_and_normalizes_it(self):
+        claims = await self.client.verify_id_token(
+            self.make_token(id="987654321"), self.nonce_hash
+        )
+        self.assertEqual(claims["id"], 987654321)
+        self.assertIsInstance(claims["id"], int)
+
     async def test_rejects_non_numeric_telegram_profile_id(self):
-        with self.assertRaises(TelegramOIDCError):
-            await self.client.verify_id_token(
-                self.make_token(id="987654321"), self.nonce_hash
-            )
+        for invalid_id in ("not-a-number", "", "１２３４５", "0", "-123", "9" * 21, True):
+            with self.subTest(invalid_id_type=type(invalid_id).__name__):
+                with self.assertRaises(TelegramOIDCError):
+                    await self.client.verify_id_token(
+                        self.make_token(id=invalid_id), self.nonce_hash
+                    )
 
     async def test_rejects_ambiguous_multiple_audiences_without_azp(self):
         with self.assertRaises(TelegramOIDCError):
