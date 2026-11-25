@@ -44,10 +44,13 @@ class EmailCodeTests(unittest.TestCase):
         self.assertTrue(self.service.verify_code("person@example.com", code))
         self.assertFalse(self.service.verify_code("person@example.com", code))
 
-        with sqlite3.connect(self.db_path) as conn:
+        conn = sqlite3.connect(self.db_path)
+        try:
             stored = conn.execute(
                 "SELECT code_hash FROM email_codes"
             ).fetchone()[0]
+        finally:
+            conn.close()
         self.assertNotEqual(stored, code)
         self.assertEqual(len(stored), 64)
 
