@@ -102,7 +102,7 @@ jobs:
           printf '%s' "$SSH_KEY" | base64 --decode > "$HOME/.ssh/id_ed25519"
           chmod 600 "$HOME/.ssh/id_ed25519"
           ssh-keygen -y -f "$HOME/.ssh/id_ed25519" > /dev/null
-          printf '%s\\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
       - name: Upload files to staging
         run: |
