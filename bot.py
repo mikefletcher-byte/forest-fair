@@ -29,6 +29,12 @@ from aiohttp import web
 from auth_store import AuthStore, InactiveUser
 from auth_api import get_bearer_session, attach_order_owner, list_orders_for_user
 from telegram_auth import TelegramInitDataError, verify_telegram_init_data
+from telegram_oidc import (
+    TelegramOIDCClient,
+    handle_telegram_oidc_callback,
+    handle_telegram_oidc_exchange,
+    handle_telegram_oidc_start,
+)
 
 
 # =====================================================================
@@ -49,6 +55,15 @@ def load_secret(filename: str, fallback: str = "") -> str:
 
 
 TELEGRAM_TOKEN = load_secret("tg_token.txt", "")
+TELEGRAM_OIDC_CLIENT_ID = os.environ.get("TELEGRAM_OIDC_CLIENT_ID", "").strip()
+TELEGRAM_OIDC_CLIENT_SECRET = os.environ.get("TELEGRAM_OIDC_CLIENT_SECRET", "").strip()
+TELEGRAM_OIDC_REDIRECT_URI = os.environ.get(
+    "TELEGRAM_OIDC_REDIRECT_URI",
+    "https://api.forest-fair.ru:8443/api/auth/telegram/oidc/callback",
+).strip()
+TELEGRAM_OIDC_FRONTEND_URL = os.environ.get(
+    "TELEGRAM_OIDC_FRONTEND_URL", "https://forest-fair.ru/"
+).strip()
 GEMINI_API_KEY = load_secret("key.txt", "")
 VK_TOKEN = load_secret("vk_token.txt", "")
 VK_GROUP_ID = 236995482
@@ -1596,10 +1611,31 @@ async def start_http_api(bot: Bot):
     auth_store = AuthStore(AUTH_DB_FILE)
     auth_store.initialize()
     app = web.Application(client_max_size=16_384)
+    oidc_http_session = aiohttp.ClientSession(
+        timeout=aiohttp.ClientTimeout(total=12, connect=5)
+    )
     app["bot"] = bot
     app["auth_store"] = auth_store
+    app["cors_headers"] = cors_headers
+    app["telegram_oidc_http"] = oidc_http_session
+    app["telegram_oidc"] = TelegramOIDCClient(
+        client_id=TELEGRAM_OIDC_CLIENT_ID,
+        client_secret=TELEGRAM_OIDC_CLIENT_SECRET,
+        redirect_uri=TELEGRAM_OIDC_REDIRECT_URI,
+        frontend_url=TELEGRAM_OIDC_FRONTEND_URL,
+        session=oidc_http_session,
+    )
+
+    async def close_oidc_http_session(_app):
+        await oidc_http_session.close()
+
+    app.on_cleanup.append(close_oidc_http_session)
     app.router.add_route("OPTIONS", "/api/auth/telegram", handle_options)
     app.router.add_post("/api/auth/telegram", handle_telegram_auth)
+    app.router.add_get("/api/auth/telegram/oidc/start", handle_telegram_oidc_start)
+    app.router.add_get("/api/auth/telegram/oidc/callback", handle_telegram_oidc_callback)
+    app.router.add_route("OPTIONS", "/api/auth/telegram/oidc/exchange", handle_options)
+    app.router.add_post("/api/auth/telegram/oidc/exchange", handle_telegram_oidc_exchange)
     app.router.add_route("OPTIONS", "/api/auth/me", handle_options)
     app.router.add_get("/api/auth/me", handle_auth_me)
     app.router.add_route("OPTIONS", "/api/auth/logout", handle_options)

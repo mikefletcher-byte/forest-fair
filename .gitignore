@@ -1,48 +1,53 @@
-# Environment files and credentials
+# Credentials and private local configuration
 .env
 .env.*
 !.env.example
+!.env.*.example
 *.env
-
-# Local secrets and key material
 *.pem
 *.key
 *.p12
 *.pfx
 *.keystore
 *.jks
-id_rsa
-id_ed25519
-id_ecdsa
+id_rsa*
+id_ed25519*
+id_ecdsa*
 .ssh/
 secrets/
 credentials/
-token.txt
-tg_token.txt
-vk_token.txt
 key.txt
+keybye.txt
+token.txt
 *_token.txt
 *_secret.txt
 *_credentials.*
+tg_token.txt
+vk_token.txt
+vk_user_token.txt
+text/gitkey.txt
 
-# Local databases and customer/order data
-*.sqlite
-*.sqlite3
-*.db
-auth.db
-auth.sqlite3
+# Local runtime data, databases, and logs
 orders.json
 reminders.json
-manager_id.txt
+auth.db
+auth.sqlite
+auth.sqlite3
+*.db
+*.sqlite
+*.sqlite3
 admin_id.txt
-
-# Logs and runtime output
+manager_id.txt
+blog_pic_index.txt
+bot.log
 *.log
 logs/
 *.log.*
 *.pid
+blog_ai_cover.jpg
+ssh root@89.22.228.22.txt
 
-# Python caches and virtual environments
+# Python caches, test output, and virtual environments
 __pycache__/
 *.py[cod]
 *$py.class
@@ -58,16 +63,32 @@ venv/
 env/
 ENV/
 
-# Local editor and operating-system files
+# Editor and operating-system files
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Temporary files and backups
+# Backups and temporary files
+backup*/
 *.tmp
 *.temp
 *.bak
 *.backup
 *~
+
+# Local-only notes, media, deployment state, and helper scripts
+text/
+vkpict/
+production/
+forest-fair-feature-unified-auth/
+deploy-vps.yml
+github_menu.ps1
+picttovps.py
+Запуск.bat
+Обновить_GitHub.bat
+Проверка.bat
+Сжать.bat
+Стоп.bat
+Pictures/*.txt
