@@ -1,4 +1,4 @@
 aiohttp
-aiogram>=3,<4
+aiogram>=3.34.0,<4
 cryptography>=50,<51
 PyJWT>=2.10,<3
